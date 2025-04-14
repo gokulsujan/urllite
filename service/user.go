@@ -37,9 +37,9 @@ func (u userService) Create(user *types.User) *types.ApplicationError {
 	}
 	if existingUser != nil {
 		return &types.ApplicationError{
-			Message:        "User with email already exists",
+			Message:        fmt.Sprintf("User with email %s already exists", user.Email),
 			HttpStatusCode: http.StatusConflict,
-			Err:          fmt.Errorf("user with email %s already exists", user.Email),
+			Err:          nil,
 		}
 	}
 

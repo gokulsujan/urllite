@@ -9,6 +9,14 @@ type ApplicationError struct {
 }
 
 func (e *ApplicationError) HttpResponse(c *gin.Context) {
+	if e.Err == nil {
+		c.JSON(e.HttpStatusCode, gin.H{
+			"status":  "failed",
+			"message": e.Message,
+		})
+		return
+	}
+
 	c.JSON(e.HttpStatusCode, gin.H{
 		"status":  "failed",
 		"message": e.Message,
