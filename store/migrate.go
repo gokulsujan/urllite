@@ -5,6 +5,7 @@ import "urllite/config/database"
 func AutoMigrateTables() {
 	migrateUserTable()
 	migratePasswordTable()
+	migrateUrlTable()
 }
 
 func migrateUserTable() {
@@ -38,6 +39,24 @@ func migratePasswordTable() {
 		deleted_at TIMESTAMP
 	)`
 	if err := database.Session.Query(createPasswordTable).Exec(); err != nil {
+		panic(err)
+	}
+}
+
+func migrateUrlTable() {
+	// Create the url table if it doesn't exist
+	createUrlTable := `
+	CREATE TABLE IF NOT EXISTS urls (
+		id UUID PRIMARY KEY,
+		user_id UUID,
+		logn_url TEXT,
+		short_url TEXT,
+		status TEXT,
+		created_at TIMESTAMP,
+		updated_at TIMESTAMP,
+		deleted_at TIMESTAMP
+	)`
+	if err := database.Session.Query(createUrlTable).Exec(); err != nil {
 		panic(err)
 	}
 }
