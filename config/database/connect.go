@@ -13,6 +13,8 @@ import (
 // It creates a session and sets the keyspace to "urllite_dev".
 // If the connection fails, it logs the error and exits the program.
 // The session is closed after use to free up resources.
+
+var Session *gocql.Session
 func Connect() {
 	cluster := gocql.NewCluster(os.Getenv("CASSANDRA_HOST"))
 	cassandraPort, err := strconv.Atoi(os.Getenv("CASSANDRA_PORT"))
@@ -41,7 +43,7 @@ func Connect() {
 
 	// Reconnect to the keyspace
 	cluster.Keyspace = keyspace
-	session, err = cluster.CreateSession()
+	Session, err = cluster.CreateSession()
 	if err != nil {
 		log.Fatal("Unable to connect to keyspace:", err.Error())
 	}
