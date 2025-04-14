@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"urllite/store"
 	"urllite/types"
 )
@@ -24,6 +25,15 @@ func NewUserService() UserService {
 }
 
 func (u userService) Create(user *types.User) error {
+	// Check for email id existence
+	existingUser, err := u.store.GetUserByEmail(user.Email)
+	if err != nil {
+		return err
+	}
+	if existingUser != nil {
+		return fmt.Errorf("user with email %s already exists", user.Email)
+	}
+
 	return u.store.CreateUser(user)
 }
 
