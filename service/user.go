@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"net/http"
 	"urllite/store"
 	"urllite/types"
 )
@@ -11,7 +12,7 @@ type userService struct {
 }
 
 type UserService interface {
-	Create(user *types.User) error
+	Create(user *types.User) *types.ApplicationError
 	GetUserByID(id string) (*types.User, error)
 	GetUserByEmail(email string) (*types.User, error)
 	GetUsers(types.UserFilter) ([]*types.User, error)
@@ -24,17 +25,35 @@ func NewUserService() UserService {
 	return &userService{store: store}
 }
 
-func (u userService) Create(user *types.User) error {
+func (u userService) Create(user *types.User) *types.ApplicationError {
 	// Check for email id existence
 	existingUser, err := u.store.GetUserByEmail(user.Email)
 	if err != nil {
-		return err
+		return &types.ApplicationError{
+			Message:        "Error while checking for existing user",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:          err,
+		}
 	}
 	if existingUser != nil {
-		return fmt.Errorf("user with email %s already exists", user.Email)
+		return &types.ApplicationError{
+			Message:        "User with email already exists",
+			HttpStatusCode: http.StatusConflict,
+			Err:          fmt.Errorf("user with email %s already exists", user.Email),
+		}
 	}
 
-	return u.store.CreateUser(user)
+	// Create user
+	err = u.store.CreateUser(user)
+	if err != nil {
+		return &types.ApplicationError{
+			Message:        "Error while creating user",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:          err,
+		}
+	}
+
+	return nil
 }
 
 func (u *userService) GetUserByID(id string) (*types.User, error) {

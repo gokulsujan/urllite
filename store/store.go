@@ -44,7 +44,9 @@ func (s *store) GetUserByEmail(email string) (*types.User, error) {
 		return nil, err
 	}
 
-	if user.DeletedAt.IsZero() && user.Email == "" && user.Mobile == "" && user.Status == "" && user.CreatedAt.IsZero() && user.UpdatedAt.IsZero() {
+	isDeleted := !user.DeletedAt.IsZero()
+
+	if !isDeleted && user.Email == "" && user.Mobile == "" && user.Status == "" && user.CreatedAt.IsZero() && user.UpdatedAt.IsZero() {
 		return nil, nil 
 	}
 	return &user, nil
