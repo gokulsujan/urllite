@@ -14,7 +14,6 @@ import (
 // If the connection fails, it logs the error and exits the program.
 // The session is closed after use to free up resources.
 
-var Session *gocql.Session
 func Connect() {
 	cluster := gocql.NewCluster(os.Getenv("CASSANDRA_HOST"))
 	cassandraPort, err := strconv.Atoi(os.Getenv("CASSANDRA_PORT"))
@@ -43,10 +42,24 @@ func Connect() {
 
 	// Reconnect to the keyspace
 	cluster.Keyspace = keyspace
-	Session, err = cluster.CreateSession()
+	session, err = cluster.CreateSession()
 	if err != nil {
 		log.Fatal("Unable to connect to keyspace:", err.Error())
 	}
 	defer session.Close()
 
+}
+
+
+func CreateSession() (*gocql.Session, error) {
+	cluster := gocql.NewCluster(os.Getenv("CASSANDRA_HOST"))
+	cassandraPort, err := strconv.Atoi(os.Getenv("CASSANDRA_PORT"))
+	if err != nil {
+		log.Fatal("Invalid Cassandra port:", err.Error())
+	}
+	cluster.Port = cassandraPort
+	cluster.Keyspace = os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
+	cluster.Consistency = gocql.Quorum
+	
+	return cluster.CreateSession()
 }

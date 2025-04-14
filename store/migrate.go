@@ -1,6 +1,9 @@
 package store
 
-import "urllite/config/database"
+import (
+	"log"
+	"urllite/config/database"
+)
 
 func AutoMigrateTables() {
 	migrateUserTable()
@@ -22,8 +25,14 @@ func migrateUserTable() {
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP
 	)`
-	if err := database.Session.Query(createUserTable).Exec(); err != nil {
-		panic(err)
+
+	session, err := database.CreateSession()
+	if err != nil {
+		log.Fatal("Unable to create session:", err.Error())
+	}
+	defer session.Close()
+	if err := session.Query(createUserTable).Exec(); err != nil {
+		log.Fatal("Unable to create user table:", err.Error())
 	}
 }
 
@@ -39,8 +48,14 @@ func migratePasswordTable() {
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP
 	)`
-	if err := database.Session.Query(createPasswordTable).Exec(); err != nil {
-		panic(err)
+
+	session, err := database.CreateSession()
+	if err != nil {
+		log.Fatal("Unable to create session:", err.Error())
+	}
+	defer session.Close()
+	if err := session.Query(createPasswordTable).Exec(); err != nil {
+		log.Fatal("Unable to create password table:", err.Error())
 	}
 }
 
@@ -57,8 +72,14 @@ func migrateUrlTable() {
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP
 	)`
-	if err := database.Session.Query(createUrlTable).Exec(); err != nil {
-		panic(err)
+
+	session, err := database.CreateSession()
+	if err != nil {
+		log.Fatal("Unable to create session:", err.Error())
+	}
+	defer session.Close()
+	if err := session.Query(createUrlTable).Exec(); err != nil {
+		log.Fatal("Unable to create url table:", err.Error())
 	}
 }
 
@@ -75,7 +96,13 @@ func migrateUrlLogTable() {
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP
 	)`
-	if err := database.Session.Query(createUrlLogTable).Exec(); err != nil {
-		panic(err)
+	
+	session, err := database.CreateSession()
+	if err != nil {
+		log.Fatal("Unable to create session:", err.Error())
+	}
+	defer session.Close()
+	if err := session.Query(createUrlLogTable).Exec(); err != nil {
+		log.Fatal("Unable to create url table:", err.Error())
 	}
 }

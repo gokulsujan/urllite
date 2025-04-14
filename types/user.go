@@ -1,4 +1,4 @@
-package model
+package types
 
 import (
 	"time"
@@ -17,4 +17,12 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	DeletedAt time.Time `json:"deleted_at"`
+}
+
+type UserFilter struct {
+	ID     gocql.UUID `json:"id"`
+	Name   string     `json:"name"`
+	Email  string     `json:"email"`
+	Mobile string     `json:"mobile_number"`
+	Status string     `json:"status"`
 }
