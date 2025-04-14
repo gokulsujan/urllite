@@ -6,6 +6,7 @@ func AutoMigrateTables() {
 	migrateUserTable()
 	migratePasswordTable()
 	migrateUrlTable()
+	migrateUrlLogTable()
 }
 
 func migrateUserTable() {
@@ -57,6 +58,24 @@ func migrateUrlTable() {
 		deleted_at TIMESTAMP
 	)`
 	if err := database.Session.Query(createUrlTable).Exec(); err != nil {
+		panic(err)
+	}
+}
+
+func migrateUrlLogTable() {
+	// Create the url table if it doesn't exist
+	createUrlLogTable := `
+	CREATE TABLE IF NOT EXISTS url_logs (
+		id UUID PRIMARY KEY,
+		user_id UUID,
+		visited_at TIMESTAMP,
+		redirect_status TEXT,
+		http_status_code INT,
+		created_at TIMESTAMP,
+		updated_at TIMESTAMP,
+		deleted_at TIMESTAMP
+	)`
+	if err := database.Session.Query(createUrlLogTable).Exec(); err != nil {
 		panic(err)
 	}
 }

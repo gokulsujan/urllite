@@ -1,0 +1,19 @@
+package model
+
+import (
+	"time"
+
+	"github.com/gocql/gocql"
+)
+
+type UrlLog struct {
+	ID             gocql.UUID `json:"id"`
+	UrlID          gocql.UUID `json:"url_id"`
+	VisitedAt      time.Time  `json:"visited_at"`
+	RedirectStatus string     `json:"redirect_status"`
+	HttpStatus     int        `json:"http_status_code"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	DeletedAt time.Time `json:"deleted_at"`
+}
