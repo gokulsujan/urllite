@@ -18,7 +18,8 @@ type UserHandler interface {
 }
 
 type userHandler struct {
-	userService service.UserService
+	userService     service.UserService
+	passwordService service.PasswordService
 }
 
 func NewUserHandler() UserHandler {

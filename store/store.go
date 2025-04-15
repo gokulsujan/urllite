@@ -28,6 +28,7 @@ type Store interface {
 	CreatePassword(password *types.Password) error
 	GetPasswordByUserID(userID string) (*types.Password, error)
 	UpdatePassword(passwrod *types.Password) error
+	DeletePassword(password *types.Password) error
 }
 
 var CASSANDRA_HOST, CASSANDRA_KEYSPACE = os.Getenv("CASSANDRA_HOST"), os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
@@ -195,7 +196,7 @@ func (s *store) CreatePassword(password *types.Password) error {
 	} else if err != nil {
 		return err
 	}
-	
+
 	createPasswordQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".passwords (id, user_id, hashed_password, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
 	password.ID, password.CreatedAt, password.UpdatedAt = gocql.TimeUUID(), time.Now(), time.Now()
 	return s.DBSession.Query(createPasswordQuery, password.ID, password.UserID, password.HashedPassword, password.Status, password.CreatedAt, password.UpdatedAt).Exec()
@@ -208,10 +209,19 @@ func (s *store) GetPasswordByUserID(userID string) (*types.Password, error) {
 		return nil, err
 	}
 
+	if !password.DeletedAt.IsZero() {
+		return nil, gocql.ErrNotFound
+	}
+
 	return &password, nil
 }
 
 func (s *store) UpdatePassword(passwrod *types.Password) error {
 	updatePasswordQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".passwords SET hashed_password = ?, updated_at = ? WHERE user_id = ? ALLOW FILTERING"
 	return s.DBSession.Query(updatePasswordQuery, passwrod.HashedPassword, time.Now(), passwrod.UserID).Exec()
+}
+
+func (s *store) DeletePassword(password *types.Password) error {
+	deletePasswordQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".passwords SET deleted_at = ? WHERE user_id = ? ALLOW FILTERING"
+	return s.DBSession.Query(deletePasswordQuery, time.Now(), password.UserID).Exec()
 }
