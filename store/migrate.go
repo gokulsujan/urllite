@@ -19,6 +19,7 @@ func migrateUserTable() {
 		id UUID PRIMARY KEY,
 		name TEXT,
 		email TEXT,
+		verified_email TEXT,
 		mobile TEXT,
 		status TEXT,
 		created_at TIMESTAMP,
