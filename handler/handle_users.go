@@ -170,7 +170,7 @@ func (h *userHandler) Login(c *gin.Context) {
 			appErr.HttpResponse(c)
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Token generated", "access-token": accessToken})
+		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Token generated", "access_token": accessToken})
 	} else {
 		c.JSON(http.StatusNotAcceptable, gin.H{"status": "failed", "message": "Incorrect Password"})
 	}
