@@ -5,6 +5,7 @@ import (
 	"strings"
 	"urllite/service"
 	"urllite/types"
+	"urllite/types/dtos"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,6 +16,8 @@ type UserHandler interface {
 	GetUsers(c *gin.Context)
 	UpdateUserByID(c *gin.Context)
 	DeleteUserByID(c *gin.Context)
+
+	Signup(c *gin.Context)
 }
 
 type userHandler struct {
@@ -106,4 +109,32 @@ func (h *userHandler) DeleteUserByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "User deleted successfully!"})
+}
+
+func (h *userHandler) Signup(c *gin.Context) {
+	var signupReq dtos.SignupDTO
+	if err := c.ShouldBindJSON(&signupReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request", "result": gin.H{"error": map[string]interface{}{"errot": err.Error()}}})
+		return
+	}
+
+	if signupReq.ConfirmPassword != signupReq.Password {
+		c.JSON(http.StatusNotAcceptable, gin.H{"status": "failed", "message": "Password and confirm passwords are not same"})
+		return
+	}
+
+	user := &types.User{Name: signupReq.Name, Email: signupReq.Email, Mobile: signupReq.Mobile, Status: "registered"}
+	appErr := h.userService.Create(user)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	_, appErr = h.passwordService.Create(signupReq.Password, user.ID.String())
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Signup successfull!! Please verify the email."})
 }
