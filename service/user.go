@@ -3,11 +3,14 @@ package service
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 	"urllite/store"
 	"urllite/types"
 
 	"github.com/gocql/gocql"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type userService struct {
@@ -17,10 +20,18 @@ type userService struct {
 type UserService interface {
 	Create(user *types.User) *types.ApplicationError
 	GetUserByID(id string) (*types.User, *types.ApplicationError)
-	GetUserByEmail(email string) (*types.User, error)
+	GetUserByEmail(email string) (*types.User, *types.ApplicationError)
 	GetUsers(types.UserFilter) ([]*types.User, *types.ApplicationError)
 	UpdateUserByID(id string, user types.User) *types.ApplicationError
 	DeleteUserByID(id string) *types.ApplicationError
+	GenerateUserAccessToken(user *types.User) (string, *types.ApplicationError)
+}
+
+type JWTClaims struct {
+	Username string
+	UserId   string
+	Email    string
+	jwt.RegisteredClaims
 }
 
 func NewUserService() UserService {
@@ -79,8 +90,22 @@ func (u *userService) GetUserByID(id string) (*types.User, *types.ApplicationErr
 	return user, nil
 }
 
-func (u *userService) GetUserByEmail(email string) (*types.User, error) {
-	return u.store.GetUserByEmail(email)
+func (u *userService) GetUserByEmail(email string) (*types.User, *types.ApplicationError) {
+	user, err := u.store.GetUserByEmail(email)
+	if err == gocql.ErrNotFound {
+		return nil, &types.ApplicationError{
+			Message:        "No user found",
+			HttpStatusCode: http.StatusNotFound,
+		}
+	} else if err != nil {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to find user",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+
+	return user, nil
 }
 
 func (u *userService) GetUsers(filter types.UserFilter) ([]*types.User, *types.ApplicationError) {
@@ -166,4 +191,26 @@ func (u *userService) DeleteUserByID(id string) *types.ApplicationError {
 	}
 
 	return nil
+}
+
+func (u *userService) GenerateUserAccessToken(user *types.User) (string, *types.ApplicationError) {
+	claims := &JWTClaims{Username: user.Name, Email: user.Email, UserId: user.ID.String(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	accessToken, err := token.SignedString(os.Getenv("ACCESS_TOKEN_SECRET_KEY"))
+	if err != nil {
+		return "", &types.ApplicationError{
+			Message:        "Unable to generate token",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+
+	return accessToken, nil
 }

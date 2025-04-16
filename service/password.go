@@ -13,6 +13,7 @@ type PasswordService interface {
 	Create(password, user_id string) (*types.Password, *types.ApplicationError)
 	GetPasswordByUserID(user_id string) (*types.Password, *types.ApplicationError)
 	DeletePasswordByUserID(user_id string) *types.ApplicationError
+	VerifyPassword(passwordStr string, password *types.Password) bool
 }
 
 type passwordService struct {
@@ -98,11 +99,16 @@ func (s *passwordService) DeletePasswordByUserID(user_id string) *types.Applicat
 	err = s.store.DeletePassword(password)
 	if err != nil {
 		return &types.ApplicationError{
-			Message: "Unable to delete password",
+			Message:        "Unable to delete password",
 			HttpStatusCode: http.StatusInternalServerError,
-			Err: err,
+			Err:            err,
 		}
 	}
 
 	return nil
+}
+
+func (s *passwordService) VerifyPassword(passwordStr string, password *types.Password) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(password.HashedPassword), []byte(passwordStr))
+	return err == nil
 }

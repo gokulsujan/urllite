@@ -18,6 +18,7 @@ type UserHandler interface {
 	DeleteUserByID(c *gin.Context)
 
 	Signup(c *gin.Context)
+	Login(c *gin.Context)
 }
 
 type userHandler struct {
@@ -137,4 +138,33 @@ func (h *userHandler) Signup(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Signup successfull!! Please verify the email."})
+}
+
+func (h *userHandler) Login(c *gin.Context) {
+	var loginReq dtos.LoginDTO
+	err := c.ShouldBindJSON(&loginReq)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request", "result": gin.H{"error": err.Error()}})
+		return
+	}
+
+	user, appErr := h.userService.GetUserByEmail(loginReq.Email)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	password, appErr := h.passwordService.GetPasswordByUserID(user.ID.String())
+	isPasswordValid := h.passwordService.VerifyPassword(loginReq.Password, password)
+
+	if isPasswordValid {
+		accessToken, appErr := h.userService.GenerateUserAccessToken(user)
+		if appErr != nil {
+			appErr.HttpResponse(c)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Token generated", "access-token": accessToken})
+	} else {
+		c.JSON(http.StatusNotAcceptable, gin.H{"status": "failed", "message": "Incorrect Password"})
+	}
 }
