@@ -8,6 +8,7 @@ import (
 	"time"
 	"urllite/store"
 	"urllite/types"
+	"urllite/types/dtos"
 
 	"github.com/gocql/gocql"
 	"github.com/golang-jwt/jwt/v5"
@@ -25,13 +26,6 @@ type UserService interface {
 	UpdateUserByID(id string, user types.User) *types.ApplicationError
 	DeleteUserByID(id string) *types.ApplicationError
 	GenerateUserAccessToken(user *types.User) (string, *types.ApplicationError)
-}
-
-type JWTClaims struct {
-	Username string
-	UserId   string
-	Email    string
-	jwt.RegisteredClaims
 }
 
 func NewUserService() UserService {
@@ -194,7 +188,7 @@ func (u *userService) DeleteUserByID(id string) *types.ApplicationError {
 }
 
 func (u *userService) GenerateUserAccessToken(user *types.User) (string, *types.ApplicationError) {
-	claims := &JWTClaims{Username: user.Name, Email: user.Email, UserId: user.ID.String(),
+	claims := &dtos.JWTClaims{Username: user.Name, Email: user.Email, UserId: user.ID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

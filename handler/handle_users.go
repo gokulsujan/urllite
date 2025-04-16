@@ -3,6 +3,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"urllite/auth"
 	"urllite/service"
 	"urllite/types"
 	"urllite/types/dtos"
@@ -16,6 +17,7 @@ type UserHandler interface {
 	GetUsers(c *gin.Context)
 	UpdateUserByID(c *gin.Context)
 	DeleteUserByID(c *gin.Context)
+	ChangePassword(c *gin.Context)
 
 	Signup(c *gin.Context)
 	Login(c *gin.Context)
@@ -172,4 +174,24 @@ func (h *userHandler) Login(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusNotAcceptable, gin.H{"status": "failed", "message": "Incorrect Password"})
 	}
+}
+
+func (h *userHandler) ChangePassword(c *gin.Context) {
+	// TODO -> Get User details from the token
+	current_user := auth.CurrentUserFromContext(c)
+
+	var changePasswordRequest dtos.PasswordChangeDTO
+	err := c.ShouldBindJSON(&changePasswordRequest)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request", "result": gin.H{"error": err.Error()}})
+		return
+	}
+
+	appErr := h.passwordService.ChangePassword(current_user.Email, changePasswordRequest.Password, changePasswordRequest.NewPassword)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Password changed successfully"})
 }
