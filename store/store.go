@@ -29,6 +29,12 @@ type Store interface {
 	GetPasswordByUserID(userID string) (*types.Password, error)
 	UpdatePassword(passwrod *types.Password) error
 	DeletePassword(password *types.Password) error
+
+	//URL Store
+	CreateURL(url *types.URL) error
+	GetUrlByID(urlID string) (*types.URL, error)
+	GetURLs() ([]*types.URL, error)
+	DeleteURL(url *types.URL) error
 }
 
 var CASSANDRA_HOST, CASSANDRA_KEYSPACE string
@@ -89,7 +95,7 @@ func (s *store) GetUserByEmail(email string) (*types.User, error) {
 
 func (s *store) SearchUsers(filter types.UserFilter) ([]*types.User, error) {
 	var users []*types.User
-	searchUsersQuery := `SELECT id, name, email, mobile, status, created_at, updated_at FROM ` + CASSANDRA_KEYSPACE + `.users`
+	searchUsersQuery := `SELECT id, name, email, mobile, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users`
 	if filter.Name != "" || filter.Email != "" || filter.Mobile != "" || filter.Status != "" {
 		searchUsersQuery += ` WHERE`
 	}
@@ -150,7 +156,7 @@ func (s *store) SearchUsers(filter types.UserFilter) ([]*types.User, error) {
 	// Iterate over the results
 	for {
 		var user types.User
-		if !iter.Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.Status, &user.CreatedAt, &user.UpdatedAt) {
+		if !iter.Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt) {
 			break
 		}
 		if user.DeletedAt.IsZero() {
@@ -232,4 +238,55 @@ func (s *store) UpdatePassword(passwrod *types.Password) error {
 func (s *store) DeletePassword(password *types.Password) error {
 	deletePasswordQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".passwords SET deleted_at = ? WHERE id = ?"
 	return s.DBSession.Query(deletePasswordQuery, time.Now(), password.ID).Exec()
+}
+
+func (s *store) CreateURL(url *types.URL) error {
+	createUrlQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".urls (id, user_id, long_url, short_url, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+	url.ID, url.CreatedAt, url.UpdatedAt = gocql.TimeUUID(), time.Now(), time.Now()
+	return s.DBSession.Query(createUrlQuery, url.ID, url.UserID, url.LongUrl, url.ShortUrl, url.Status, url.CreatedAt, url.UpdatedAt).Exec()
+}
+
+func (s *store) GetUrlByID(id string) (*types.URL, error) {
+	var url types.URL
+	selectUrlByIdQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE id = ?"
+	err := s.DBSession.Query(selectUrlByIdQuery, id).Consistency(gocql.One).Scan(&url.ID, &url.UserID, &url.LongUrl, &url.ShortUrl, &url.Status, &url.CreatedAt, &url.UpdatedAt, &url.DeletedAt)
+
+	if err == gocql.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &url, nil
+}
+
+func (s *store) GetURLs() ([]*types.URL, error) {
+	var urls []*types.URL
+	getURLsQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls"
+	iter := s.DBSession.Query(getURLsQuery).Iter()
+
+	defer iter.Close()
+
+	// Iterate over the results
+	for {
+		var url types.URL
+		if !iter.Scan(&url.ID, &url.UserID, &url.LongUrl, &url.ShortUrl, &url.Status, &url.CreatedAt, &url.UpdatedAt, &url.DeletedAt) {
+			break
+		}
+		if url.DeletedAt.IsZero() {
+			urls = append(urls, &url)
+		}
+	}
+
+	if len(urls) == 0 {
+		return nil, nil
+	}
+
+	return urls, nil
+
+}
+
+func (s *store) DeleteURL(url *types.URL) error {
+	deleteUrlQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".urls SET deleted_at = ? WHERE id = ?"
+	return s.DBSession.Query(deleteUrlQuery, time.Now(), url.ID).Exec()
 }

@@ -66,7 +66,7 @@ func migrateUrlTable() {
 	CREATE TABLE IF NOT EXISTS urls (
 		id UUID PRIMARY KEY,
 		user_id UUID,
-		logn_url TEXT,
+		long_url TEXT,
 		short_url TEXT,
 		status TEXT,
 		created_at TIMESTAMP,
