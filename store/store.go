@@ -225,11 +225,11 @@ func (s *store) GetPasswordByUserID(userID string) (*types.Password, error) {
 }
 
 func (s *store) UpdatePassword(passwrod *types.Password) error {
-	updatePasswordQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".passwords SET hashed_password = ?, updated_at = ? WHERE user_id = ? ALLOW FILTERING"
-	return s.DBSession.Query(updatePasswordQuery, passwrod.HashedPassword, time.Now(), passwrod.UserID).Exec()
+	updatePasswordQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".passwords SET hashed_password = ?, updated_at = ? WHERE id = ?"
+	return s.DBSession.Query(updatePasswordQuery, passwrod.HashedPassword, time.Now(), passwrod.ID).Exec()
 }
 
 func (s *store) DeletePassword(password *types.Password) error {
-	deletePasswordQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".passwords SET deleted_at = ? WHERE user_id = ? ALLOW FILTERING"
-	return s.DBSession.Query(deletePasswordQuery, time.Now(), password.UserID).Exec()
+	deletePasswordQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".passwords SET deleted_at = ? WHERE id = ?"
+	return s.DBSession.Query(deletePasswordQuery, time.Now(), password.ID).Exec()
 }
