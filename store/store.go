@@ -31,9 +31,11 @@ type Store interface {
 	DeletePassword(password *types.Password) error
 }
 
-var CASSANDRA_HOST, CASSANDRA_KEYSPACE = os.Getenv("CASSANDRA_HOST"), os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
+var CASSANDRA_HOST, CASSANDRA_KEYSPACE string
 
 func NewStore() Store {
+	CASSANDRA_HOST = os.Getenv("CASSANDRA_HOST")
+	CASSANDRA_KEYSPACE = os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
 	session, err := gocql.NewCluster(CASSANDRA_HOST).CreateSession()
 	if err != nil {
 		panic(err)
@@ -75,9 +77,11 @@ func (s *store) GetUserByEmail(email string) (*types.User, error) {
 		return nil, err
 	}
 
-	isDeleted := !user.DeletedAt.IsZero()
+	if !user.DeletedAt.IsZero() {
+		return nil, gocql.ErrNotFound
+	}
 
-	if !isDeleted && user.Email == "" && user.Mobile == "" && user.Status == "" && user.CreatedAt.IsZero() && user.UpdatedAt.IsZero() {
+	if user.Email == "" && user.Mobile == "" && user.Status == "" && user.CreatedAt.IsZero() && user.UpdatedAt.IsZero() {
 		return nil, nil
 	}
 	return &user, nil
@@ -193,7 +197,7 @@ func (s *store) CreatePassword(password *types.Password) error {
 	_, err := s.GetPasswordByUserID(password.UserID.String())
 	if err != gocql.ErrNotFound {
 		return fmt.Errorf("Password already setted for the user_id: ", password.UserID)
-	} else if err != nil {
+	} else if err != gocql.ErrNotFound && err != nil {
 		return err
 	}
 
@@ -205,7 +209,11 @@ func (s *store) CreatePassword(password *types.Password) error {
 func (s *store) GetPasswordByUserID(userID string) (*types.Password, error) {
 	var password types.Password
 	searchPasswordByUserIdQuery := "SELECT id, user_id, hashed_password, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".passwords WHERE user_id = ? ALLOW FILTERING"
-	if err := s.DBSession.Query(searchPasswordByUserIdQuery, userID).Consistency(gocql.One).Scan(password.ID, password.UserID, password.HashedPassword, password.Status, password.CreatedAt, password.UpdatedAt, password.DeletedAt); err != nil {
+	userUUID, err := gocql.ParseUUID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.DBSession.Query(searchPasswordByUserIdQuery, userUUID).Consistency(gocql.One).Scan(&password.ID, &password.UserID, &password.HashedPassword, &password.Status, &password.CreatedAt, &password.UpdatedAt, &password.DeletedAt); err != nil {
 		return nil, err
 	}
 

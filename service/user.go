@@ -202,8 +202,8 @@ func (u *userService) GenerateUserAccessToken(user *types.User) (string, *types.
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-
-	accessToken, err := token.SignedString(os.Getenv("ACCESS_TOKEN_SECRET_KEY"))
+	jwtKey := []byte(os.Getenv("ACCESS_TOKEN_SECRET_KEY"))
+	accessToken, err := token.SignedString(jwtKey)
 	if err != nil {
 		return "", &types.ApplicationError{
 			Message:        "Unable to generate token",

@@ -8,6 +8,9 @@ import (
 
 func MountHTTPRoutes(r *gin.Engine) {
 	userHandlers := handler.NewUserHandler()
+	r.POST("/signup", userHandlers.Signup)
+	r.POST("/login", userHandlers.Login)
+
 	userGroup := r.Group("/api/v1/user")
 	{
 		userGroup.POST("/", userHandlers.CreateUser)
@@ -17,4 +20,3 @@ func MountHTTPRoutes(r *gin.Engine) {
 		userGroup.DELETE("/:id", userHandlers.DeleteUserByID)
 	}
 }
-

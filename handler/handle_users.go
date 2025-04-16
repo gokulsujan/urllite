@@ -28,7 +28,8 @@ type userHandler struct {
 
 func NewUserHandler() UserHandler {
 	userService := service.NewUserService()
-	return &userHandler{userService: userService}
+	passwordService := service.NewPasswordService()
+	return &userHandler{userService: userService, passwordService: passwordService}
 }
 
 func (h *userHandler) CreateUser(c *gin.Context) {
@@ -155,6 +156,10 @@ func (h *userHandler) Login(c *gin.Context) {
 	}
 
 	password, appErr := h.passwordService.GetPasswordByUserID(user.ID.String())
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
 	isPasswordValid := h.passwordService.VerifyPassword(loginReq.Password, password)
 
 	if isPasswordValid {
