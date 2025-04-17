@@ -1,11 +1,13 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+	"urllite/cache"
 	"urllite/store"
 	"urllite/types"
 	"urllite/types/dtos"
@@ -25,7 +27,7 @@ type UserService interface {
 	GetUsers(types.UserFilter) ([]*types.User, *types.ApplicationError)
 	UpdateUserByID(id string, user types.User) *types.ApplicationError
 	DeleteUserByID(id string) *types.ApplicationError
-	GenerateUserAccessToken(user *types.User) (string, *types.ApplicationError)
+	GenerateUserAccessToken(user *types.User, ctx context.Context) (string, *types.ApplicationError)
 }
 
 func NewUserService() UserService {
@@ -187,7 +189,31 @@ func (u *userService) DeleteUserByID(id string) *types.ApplicationError {
 	return nil
 }
 
-func (u *userService) GenerateUserAccessToken(user *types.User) (string, *types.ApplicationError) {
+func (u *userService) GenerateUserAccessToken(user *types.User, ctx context.Context) (string, *types.ApplicationError) {
+	redisTokenKey := "access_token_" + user.ID.String()
+	redicClient := cache.InitRedis(ctx)
+	ok, err := redicClient.Exists(redisTokenKey)
+	if err != nil {
+		return "", &types.ApplicationError{
+			Message:        "Unable to get token from redis",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+
+	if ok {
+		token, err := redicClient.Get(redisTokenKey)
+		if err != nil {
+			return "", &types.ApplicationError{
+				Message:        "Unable to get token from redis",
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+			}
+		}
+
+		return token, nil
+	}
+	
 	claims := &dtos.JWTClaims{Username: user.Name, Email: user.Email, UserId: user.ID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -205,6 +231,8 @@ func (u *userService) GenerateUserAccessToken(user *types.User) (string, *types.
 			Err:            err,
 		}
 	}
+
+	redicClient.Set(redisTokenKey, accessToken, 23*time.Hour)
 
 	return accessToken, nil
 }

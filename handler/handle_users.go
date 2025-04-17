@@ -165,7 +165,7 @@ func (h *userHandler) Login(c *gin.Context) {
 	isPasswordValid := h.passwordService.VerifyPassword(loginReq.Password, password)
 
 	if isPasswordValid {
-		accessToken, appErr := h.userService.GenerateUserAccessToken(user)
+		accessToken, appErr := h.userService.GenerateUserAccessToken(user, c.Request.Context())
 		if appErr != nil {
 			appErr.HttpResponse(c)
 			return
