@@ -24,7 +24,8 @@ func migrateUserTable() {
 		status TEXT,
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
-		deleted_at TIMESTAMP
+		deleted_at TIMESTAMP, 
+        PRIMARY KEY(id, email, mobile, created_at));
 	)`
 
 	session, err := database.CreateSession()
@@ -41,13 +42,14 @@ func migratePasswordTable() {
 	// Create the password table if it doesn't exist
 	createPasswordTable := `
 	CREATE TABLE IF NOT EXISTS passwords (
-		id UUID PRIMARY KEY,
+		id UUID,
 		user_id UUID,
 		hashed_password TEXT,
 		status TEXT,
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
-		deleted_at TIMESTAMP
+		deleted_at TIMESTAMP, 
+        PRIMARY KEY(id, user_id, created_at));
 	)`
 
 	session, err := database.CreateSession()
@@ -64,14 +66,15 @@ func migrateUrlTable() {
 	// Create the url table if it doesn't exist
 	createUrlTable := `
 	CREATE TABLE IF NOT EXISTS urls (
-		id UUID PRIMARY KEY,
+		id UUID,
 		user_id UUID,
 		long_url TEXT,
 		short_url TEXT,
 		status TEXT,
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
-		deleted_at TIMESTAMP
+		deleted_at TIMESTAMP, 
+        PRIMARY KEY(id, user_id, created_at));
 	)`
 
 	session, err := database.CreateSession()
@@ -88,16 +91,17 @@ func migrateUrlLogTable() {
 	// Create the url table if it doesn't exist
 	createUrlLogTable := `
 	CREATE TABLE IF NOT EXISTS url_logs (
-		id UUID PRIMARY KEY,
+		id UUID,
 		user_id UUID,
 		visited_at TIMESTAMP,
 		redirect_status TEXT,
 		http_status_code INT,
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
-		deleted_at TIMESTAMP
+		deleted_at TIMESTAMP, 
+        PRIMARY KEY(id, user_id, created_at));
 	)`
-	
+
 	session, err := database.CreateSession()
 	if err != nil {
 		log.Fatal("Unable to create session:", err.Error())

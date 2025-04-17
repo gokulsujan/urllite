@@ -32,8 +32,8 @@ type Store interface {
 
 	//URL Store
 	CreateURL(url *types.URL) error
-	GetUrlByID(urlID string) (*types.URL, error)
-	GetURLs() ([]*types.URL, error)
+	GetUrlByID(id string) (*types.URL, error)
+	GetURLsOfUser(user_id string) ([]*types.URL, error)
 	DeleteURL(url *types.URL) error
 }
 
@@ -78,7 +78,7 @@ func (s *store) GetUserByID(id string) (*types.User, error) {
 
 func (s *store) GetUserByEmail(email string) (*types.User, error) {
 	var user types.User
-	getUserQuery := `SELECT id, name, email, mobile, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? ALLOW FILTERING`
+	getUserQuery := `SELECT id, name, email, mobile, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? `
 	if err := s.DBSession.Query(getUserQuery, email).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func (s *store) CreatePassword(password *types.Password) error {
 
 func (s *store) GetPasswordByUserID(userID string) (*types.Password, error) {
 	var password types.Password
-	searchPasswordByUserIdQuery := "SELECT id, user_id, hashed_password, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".passwords WHERE user_id = ? ALLOW FILTERING"
+	searchPasswordByUserIdQuery := "SELECT id, user_id, hashed_password, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".passwords WHERE user_id = ? "
 	userUUID, err := gocql.ParseUUID(userID)
 	if err != nil {
 		return nil, err
@@ -260,10 +260,10 @@ func (s *store) GetUrlByID(id string) (*types.URL, error) {
 	return &url, nil
 }
 
-func (s *store) GetURLs() ([]*types.URL, error) {
+func (s *store) GetURLsOfUser(user_id string) ([]*types.URL, error) {
 	var urls []*types.URL
-	getURLsQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls"
-	iter := s.DBSession.Query(getURLsQuery).Iter()
+	getURLsQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE user_id = ?"
+	iter := s.DBSession.Query(getURLsQuery, user_id).Iter()
 
 	defer iter.Close()
 
