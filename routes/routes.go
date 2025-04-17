@@ -9,16 +9,25 @@ import (
 
 func MountHTTPRoutes(r *gin.Engine) {
 	userHandlers := handler.NewUserHandler()
+
 	r.POST("/signup", userHandlers.Signup)
 	r.POST("/login", userHandlers.Login)
 	r.POST("/change-password", auth.UserAuthentication, userHandlers.ChangePassword)
 
-	userGroup := r.Group("/api/v1/user")
+	authenticatedApis := r.Group("/api/v1", auth.UserAuthentication)
 	{
-		userGroup.POST("/", auth.UserAuthentication, userHandlers.CreateUser)
-		userGroup.GET("/", auth.UserAuthentication, userHandlers.GetUsers)
-		userGroup.GET("/:id", auth.UserAuthentication, userHandlers.GetUserByID)
-		userGroup.PATCH("/:id", auth.UserAuthentication, userHandlers.UpdateUserByID)
-		userGroup.DELETE("/:id", auth.UserAuthentication, userHandlers.DeleteUserByID)
+		userGroup := authenticatedApis.Group("/user")
+		{
+			userGroup.POST("/", userHandlers.CreateUser)
+			userGroup.GET("/", userHandlers.GetUsers)
+			userGroup.GET("/:id", userHandlers.GetUserByID)
+			userGroup.PATCH("/:id", userHandlers.UpdateUserByID)
+			userGroup.DELETE("/:id", userHandlers.DeleteUserByID)
+		}
+
+		urlGroup := authenticatedApis.Group("/url")
+		{
+			urlGroup.POST("/")
+		}
 	}
 }
