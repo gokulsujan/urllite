@@ -265,6 +265,9 @@ func (s *store) GetUrlByShortUrl(short_url string) (*types.URL, error) {
 	var url types.URL
 	selectUrlByIdQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE short_url = ? ALLOW FILTERING"
 	err := s.DBSession.Query(selectUrlByIdQuery, short_url).Consistency(gocql.One).Scan(&url.ID, &url.UserID, &url.LongUrl, &url.ShortUrl, &url.Status, &url.CreatedAt, &url.UpdatedAt, &url.DeletedAt)
+	if !url.DeletedAt.IsZero() {
+		return nil, nil
+	}
 
 	if err == gocql.ErrNotFound {
 		return nil, nil

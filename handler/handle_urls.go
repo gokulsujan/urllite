@@ -53,14 +53,35 @@ func (u *urlHandler) RedirectToLongUrl(c *gin.Context) {
 		return
 	}
 
+	if url == nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No url found"})
+		return
+	}
+
 	c.Redirect(http.StatusPermanentRedirect, url.LongUrl)
 }
 
 func (u *urlHandler) GetUrlByID(c *gin.Context) {
 	urlId := c.Param("id")
-	url, appErr := u.urlService.GetUrlByID(urlId)
+	current_user_id, ok := c.Get("current_user_id")
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current user id from context"})
+		return
+	}
+	url, appErr := u.urlService.GetUrlByID(urlId, current_user_id.(string))
 	if appErr != nil {
 		appErr.HttpResponse(c)
+		return
+	}
+
+	currentUserID, ok := c.Get("current_user_id")
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current user id from context"})
+		return
+	}
+
+	if url.UserID.String() != currentUserID.(string) {
+		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No url found"})
 		return
 	}
 
@@ -83,7 +104,12 @@ func (u *urlHandler) GetURLs(c *gin.Context) {
 
 func (u *urlHandler) DeleteURLById(c *gin.Context) {
 	urlId := c.Param("id")
-	appErr := u.urlService.DeleteUrlById(urlId)
+	current_user_id, ok := c.Get("current_user_id")
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current user id from context"})
+		return
+	}
+	appErr := u.urlService.DeleteUrlById(urlId, current_user_id.(string))
 	if appErr != nil {
 		appErr.HttpResponse(c)
 		return
