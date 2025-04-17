@@ -32,7 +32,11 @@ func (u *urlHandler) Create(c *gin.Context) {
 		return
 	}
 
-	url, appErr := u.urlService.CreateUrl(urlDto.LongUrl)
+	curent_user, ok := c.Get("current_user_id")
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "No user data found in the context"})
+	}
+	url, appErr := u.urlService.CreateUrl(urlDto.LongUrl, curent_user.(string))
 	if appErr != nil {
 		appErr.HttpResponse(c)
 		return
@@ -42,14 +46,8 @@ func (u *urlHandler) Create(c *gin.Context) {
 }
 
 func (u *urlHandler) RedirectToLongUrl(c *gin.Context) {
-	var urlDto dtos.UrlDTO
-	err := c.ShouldBindJSON(&urlDto)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request body", "result": gin.H{"error": err.Error()}})
-		return
-	}
-
-	url, appErr := u.urlService.GetUrlByShortUrl(urlDto.ShortUrl)
+	shortUrl := c.Param("short_url")
+	url, appErr := u.urlService.GetUrlByShortUrl(shortUrl)
 	if appErr != nil {
 		appErr.HttpResponse(c)
 		return

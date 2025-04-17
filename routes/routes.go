@@ -9,10 +9,11 @@ import (
 
 func MountHTTPRoutes(r *gin.Engine) {
 	userHandlers := handler.NewUserHandler()
-
+	urlHandler := handler.NewUrlHandler()
 	r.POST("/signup", userHandlers.Signup)
 	r.POST("/login", userHandlers.Login)
 	r.POST("/change-password", auth.UserAuthentication, userHandlers.ChangePassword)
+	r.GET("/:short_url", urlHandler.RedirectToLongUrl)
 
 	authenticatedApis := r.Group("/api/v1", auth.UserAuthentication)
 	{
@@ -27,7 +28,10 @@ func MountHTTPRoutes(r *gin.Engine) {
 
 		urlGroup := authenticatedApis.Group("/url")
 		{
-			urlGroup.POST("/")
+			urlGroup.POST("/", urlHandler.Create)
+			urlGroup.GET("/", urlHandler.GetURLs)
+			urlGroup.GET("/:id", urlHandler.GetUrlByID)
+			urlGroup.DELETE("/:id", urlHandler.DeleteURLById)
 		}
 	}
 }

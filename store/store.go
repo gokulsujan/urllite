@@ -79,7 +79,7 @@ func (s *store) GetUserByID(id string) (*types.User, error) {
 
 func (s *store) GetUserByEmail(email string) (*types.User, error) {
 	var user types.User
-	getUserQuery := `SELECT id, name, email, mobile, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? `
+	getUserQuery := `SELECT id, name, email, mobile, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? ALLOW FILTERING`
 	if err := s.DBSession.Query(getUserQuery, email).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func (s *store) CreatePassword(password *types.Password) error {
 
 func (s *store) GetPasswordByUserID(userID string) (*types.Password, error) {
 	var password types.Password
-	searchPasswordByUserIdQuery := "SELECT id, user_id, hashed_password, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".passwords WHERE user_id = ? "
+	searchPasswordByUserIdQuery := "SELECT id, user_id, hashed_password, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".passwords WHERE user_id = ? ALLOW FILTERING"
 	userUUID, err := gocql.ParseUUID(userID)
 	if err != nil {
 		return nil, err
@@ -263,7 +263,7 @@ func (s *store) GetUrlByID(id string) (*types.URL, error) {
 
 func (s *store) GetUrlByShortUrl(short_url string) (*types.URL, error) {
 	var url types.URL
-	selectUrlByIdQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE short_url = ?"
+	selectUrlByIdQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE short_url = ? ALLOW FILTERING"
 	err := s.DBSession.Query(selectUrlByIdQuery, short_url).Consistency(gocql.One).Scan(&url.ID, &url.UserID, &url.LongUrl, &url.ShortUrl, &url.Status, &url.CreatedAt, &url.UpdatedAt, &url.DeletedAt)
 
 	if err == gocql.ErrNotFound {
@@ -277,7 +277,7 @@ func (s *store) GetUrlByShortUrl(short_url string) (*types.URL, error) {
 
 func (s *store) GetURLsOfUser(user_id string) ([]*types.URL, error) {
 	var urls []*types.URL
-	getURLsQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE user_id = ?"
+	getURLsQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE user_id = ? ALLOW FILTERING"
 	iter := s.DBSession.Query(getURLsQuery, user_id).Iter()
 
 	defer iter.Close()
