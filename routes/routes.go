@@ -3,6 +3,7 @@ package routes
 import (
 	"urllite/auth"
 	"urllite/handler"
+	"urllite/security"
 
 	"github.com/gin-gonic/gin"
 )
@@ -10,8 +11,8 @@ import (
 func MountHTTPRoutes(r *gin.Engine) {
 	userHandlers := handler.NewUserHandler()
 	urlHandler := handler.NewUrlHandler()
-	r.POST("/signup", userHandlers.Signup)
-	r.POST("/login", userHandlers.Login)
+	r.POST("/signup", security.RatelimittingMiddleware, userHandlers.Signup)
+	r.POST("/login", security.RatelimittingMiddleware, userHandlers.Login)
 	r.POST("/change-password", auth.UserAuthentication, userHandlers.ChangePassword)
 	r.GET("/:short_url", urlHandler.RedirectToLongUrl)
 
@@ -28,7 +29,7 @@ func MountHTTPRoutes(r *gin.Engine) {
 
 		urlGroup := authenticatedApis.Group("/url")
 		{
-			urlGroup.POST("/", urlHandler.Create)
+			urlGroup.POST("/", security.RatelimittingMiddleware, urlHandler.Create)
 			urlGroup.GET("/", urlHandler.GetURLs)
 			urlGroup.GET("/:id", urlHandler.GetUrlByID)
 			urlGroup.DELETE("/:id", urlHandler.DeleteURLById)
