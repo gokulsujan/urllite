@@ -26,7 +26,7 @@ func NewPasswordService() PasswordService {
 	return &passwordService{store: store}
 }
 
-func (s passwordService) Create(password, user_id string) (*types.Password, *types.ApplicationError) {
+func (s *passwordService) Create(password, user_id string) (*types.Password, *types.ApplicationError) {
 
 	var newPassword types.Password
 	hashed_password, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -61,7 +61,7 @@ func (s passwordService) Create(password, user_id string) (*types.Password, *typ
 	return &newPassword, nil
 }
 
-func (s passwordService) GetPasswordByUserID(user_id string) (*types.Password, *types.ApplicationError) {
+func (s *passwordService) GetPasswordByUserID(user_id string) (*types.Password, *types.ApplicationError) {
 	password, err := s.store.GetPasswordByUserID(user_id)
 	if err == gocql.ErrNotFound {
 		return nil, &types.ApplicationError{
@@ -81,7 +81,7 @@ func (s passwordService) GetPasswordByUserID(user_id string) (*types.Password, *
 	return password, nil
 }
 
-func (s passwordService) DeletePasswordByUserID(user_id string) *types.ApplicationError {
+func (s *passwordService) DeletePasswordByUserID(user_id string) *types.ApplicationError {
 	password, err := s.store.GetPasswordByUserID(user_id)
 	if err == gocql.ErrNotFound {
 		return &types.ApplicationError{
@@ -109,7 +109,7 @@ func (s passwordService) DeletePasswordByUserID(user_id string) *types.Applicati
 	return nil
 }
 
-func (s passwordService) VerifyPassword(passwordStr string, password *types.Password) bool {
+func (s *passwordService) VerifyPassword(passwordStr string, password *types.Password) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(password.HashedPassword), []byte(passwordStr))
 	return err == nil
 }
