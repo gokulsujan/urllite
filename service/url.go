@@ -5,6 +5,8 @@ import (
 	"urllite/store"
 	"urllite/types"
 	"urllite/utils"
+
+	"github.com/gocql/gocql"
 )
 
 type urlService struct {
@@ -12,7 +14,7 @@ type urlService struct {
 }
 
 type UrlService interface {
-	CreateUrl(longUrl string) (*types.URL, *types.ApplicationError)
+	CreateUrl(longUrl, user_id string) (*types.URL, *types.ApplicationError)
 	GetUrlByID(id string) (*types.URL, *types.ApplicationError)
 	GetUrlByShortUrl(short_url string) (*types.URL, *types.ApplicationError)
 	DeleteUrlById(id string) *types.ApplicationError
@@ -24,20 +26,36 @@ func NewUrlService() UrlService {
 	return &urlService{store: s}
 }
 
-func (u *urlService) CreateUrl(longUrl string) (*types.URL, *types.ApplicationError) {
+func (u *urlService) CreateUrl(longUrl, user_id string) (*types.URL, *types.ApplicationError) {
 	var url types.URL
-	url.LongUrl = longUrl
-	url.Status = "active"
-	shortUrl, err := utils.GenerateBase62ID()
-	
-	if err != nil {
+	normalisedUrl, ok := utils.NormalizeAndValidateURL(longUrl)
+	if !ok {
 		return nil, &types.ApplicationError{
-			Message: "Unable to generate short url",
-			HttpStatusCode: http.StatusInternalServerError,
-			Err: err,
+			Message:        "Not a valid url",
+			HttpStatusCode: http.StatusBadRequest,
 		}
 	}
+
+	parsedUserID, err := gocql.ParseUUID(user_id)
+	if !ok {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to find logged user data",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+	url.LongUrl = normalisedUrl
+	url.Status = "active"
+	url.UserID = parsedUserID
+	shortUrl, err := utils.GenerateBase62ID()
 	url.ShortUrl = shortUrl
+	if err != nil {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to generate short url",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
 
 	err = u.store.CreateURL(&url)
 	if err != nil {
