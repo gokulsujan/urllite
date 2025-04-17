@@ -33,6 +33,7 @@ type Store interface {
 	//URL Store
 	CreateURL(url *types.URL) error
 	GetUrlByID(id string) (*types.URL, error)
+	GetUrlByShortUrl(short_url string) (*types.URL, error)
 	GetURLsOfUser(user_id string) ([]*types.URL, error)
 	DeleteURL(url *types.URL) error
 }
@@ -250,6 +251,20 @@ func (s *store) GetUrlByID(id string) (*types.URL, error) {
 	var url types.URL
 	selectUrlByIdQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE id = ?"
 	err := s.DBSession.Query(selectUrlByIdQuery, id).Consistency(gocql.One).Scan(&url.ID, &url.UserID, &url.LongUrl, &url.ShortUrl, &url.Status, &url.CreatedAt, &url.UpdatedAt, &url.DeletedAt)
+
+	if err == gocql.ErrNotFound {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return &url, nil
+}
+
+func (s *store) GetUrlByShortUrl(short_url string) (*types.URL, error) {
+	var url types.URL
+	selectUrlByIdQuery := "SELECT id, user_id, long_url, short_url, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE short_url = ?"
+	err := s.DBSession.Query(selectUrlByIdQuery, short_url).Consistency(gocql.One).Scan(&url.ID, &url.UserID, &url.LongUrl, &url.ShortUrl, &url.Status, &url.CreatedAt, &url.UpdatedAt, &url.DeletedAt)
 
 	if err == gocql.ErrNotFound {
 		return nil, nil

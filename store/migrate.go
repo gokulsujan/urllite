@@ -74,7 +74,7 @@ func migrateUrlTable() {
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP, 
-        PRIMARY KEY(id, user_id, created_at));
+        PRIMARY KEY(id, user_id, short_url, created_at));
 	)`
 
 	session, err := database.CreateSession()
