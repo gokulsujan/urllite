@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"urllite/store"
 	"urllite/types"
+	"urllite/utils"
 )
 
 type urlService struct {
@@ -27,10 +28,18 @@ func (u *urlService) CreateUrl(longUrl string) (*types.URL, *types.ApplicationEr
 	var url types.URL
 	url.LongUrl = longUrl
 	url.Status = "active"
+	shortUrl, err := utils.GenerateBase62ID()
+	
+	if err != nil {
+		return nil, &types.ApplicationError{
+			Message: "Unable to generate short url",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err: err,
+		}
+	}
+	url.ShortUrl = shortUrl
 
-	// Todo -> short url logic
-
-	err := u.store.CreateURL(&url)
+	err = u.store.CreateURL(&url)
 	if err != nil {
 		return nil, &types.ApplicationError{
 			Message:        "Unable to create new url",
