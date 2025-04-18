@@ -256,16 +256,25 @@ func (u *userService) SendEmailVerificationOtp(emailID string) *types.Applicatio
 		}
 	}
 
+	if user.IsEmailVerified() {
+		return &types.ApplicationError{
+			Message:        "User already verified",
+			HttpStatusCode: http.StatusOK,
+		}
+	}
+
 	// Otp generation
-	var otp *types.Otp
+	var otp types.Otp
 	otp.Key = "VERIFY_EMAIL_OTP_" + emailID
 	rand.Seed(time.Now().UnixNano())
 	otp.Otp = strconv.Itoa(rand.Intn(900000) + 100000)
 	otp.ExpiredAt = time.Now().Add(10 * time.Minute)
-	u.store.CreateOtp(otp)
+	otp.UserID = user.ID
+	otp.Status = "pending"
+	u.store.CreateOtp(&otp)
 
 	mailer := utils.NewMailer()
-	err := mailer.SendOtpForEmailVerification(user, otp)
+	err := mailer.SendOtpForEmailVerification(user, &otp)
 	if err != nil {
 		return &types.ApplicationError{
 			Message:        "Unable sent email",
@@ -290,6 +299,13 @@ func (u *userService) VerifyEmail(emailID, otpStr string) *types.ApplicationErro
 		}
 	}
 
+	if user.IsEmailVerified() {
+		return &types.ApplicationError{
+			Message:        "Email already verified",
+			HttpStatusCode: http.StatusOK,
+		}
+	}
+
 	// Getting otp
 	key := "VERIFY_EMAIL_OTP_" + user.Email
 	otps, err := u.store.GetOtpByUserIdAndOtp(user.ID.String(), key, otpStr)
@@ -311,9 +327,27 @@ func (u *userService) VerifyEmail(emailID, otpStr string) *types.ApplicationErro
 
 	// Verify email
 	user.VerifiedEmail = user.Email
+	err = u.store.UpdateUser(user)
+	if err != nil {
+		return &types.ApplicationError{
+			Message:        "Unable update user verified email",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
 	appErr = u.UpdateUserByID(user.ID.String(), *user)
 	if appErr != nil {
 		return appErr
+	}
+	for _, otp := range otps {
+		err = u.store.ChangeOtpStatus(otp, "verified")
+		if err != nil {
+			return &types.ApplicationError{
+				Message:        "Unable verify otp",
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+			}
+		}
 	}
 	return nil
 
