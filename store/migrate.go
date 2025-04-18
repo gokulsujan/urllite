@@ -89,7 +89,7 @@ func migrateUrlLogTable() {
 	createUrlLogTable := `
 	CREATE TABLE IF NOT EXISTS url_logs (
 		id UUID PRIMARY KEY,
-		user_id UUID,
+		url_id UUID,
 		visited_at TIMESTAMP,
 		redirect_status TEXT,
 		http_status_code INT,

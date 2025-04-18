@@ -36,6 +36,11 @@ type Store interface {
 	GetUrlByShortUrl(short_url string) (*types.URL, error)
 	GetURLsOfUser(user_id string) ([]*types.URL, error)
 	DeleteURL(url *types.URL) error
+
+	//URL Logs
+	CreateUrlLog(log *types.UrlLog) error
+	DeleteUrlLogsByUrlId(urlID string, deletedTime time.Time) error
+	GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error)
 }
 
 var CASSANDRA_HOST, CASSANDRA_KEYSPACE string
@@ -307,4 +312,53 @@ func (s *store) GetURLsOfUser(user_id string) ([]*types.URL, error) {
 func (s *store) DeleteURL(url *types.URL) error {
 	deleteUrlQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".urls SET deleted_at = ? WHERE id = ?"
 	return s.DBSession.Query(deleteUrlQuery, time.Now(), url.ID).Exec()
+}
+
+func (s *store) CreateUrlLog(log *types.UrlLog) error {
+	insertUrlLogQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".url_logs (id, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+	log.ID, log.VisitedAt, log.CreatedAt, log.UpdatedAt = gocql.TimeUUID(), time.Now(), time.Now(), time.Now()
+	return s.DBSession.Query(insertUrlLogQuery, log.ID, log.UrlID, log.VisitedAt, log.RedirectStatus, log.HttpStatusCode, log.CreatedAt, log.UpdatedAt).Exec()
+}
+
+func (s *store) GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error) {
+	searchLogsQuery := "SELECT id, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id = ?"
+	url, err := s.GetUrlByID(urlID)
+	if err != nil {
+		return nil, err
+	}
+
+	iter := s.DBSession.Query(searchLogsQuery, url.ID).Iter()
+	var logs []*types.UrlLog
+
+	for {
+		var log types.UrlLog
+		if !iter.Scan(&log.ID, &log.UrlID, &log.VisitedAt, &log.RedirectStatus, &log.HttpStatusCode, &log.CreatedAt, &log.UpdatedAt, &log.DeletedAt) {
+			break
+		}
+		if log.DeletedAt.IsZero() {
+			logs = append(logs, &log)
+		}
+	}
+
+	return logs, nil
+
+}
+
+func (s *store) DeleteUrlLogsByUrlId(urlID string, deletedTime time.Time) error {
+	url, err := s.GetUrlByID(urlID)
+	if err != nil {
+		return err
+	}
+	if url == nil {
+		return nil
+	}
+	deleteUrlLogQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".url_logs SET deleted_at = ? WHERE url_id = ?"
+	logs, err := s.GetUrlLogsByUrlId(urlID)
+	if err != nil {
+		return err
+	}
+	for _, log := range logs {
+		s.DBSession.Query(deleteUrlLogQuery, deletedTime, log.ID).Exec()
+	}
+	return nil
 }
