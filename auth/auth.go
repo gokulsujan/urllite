@@ -45,7 +45,23 @@ func UserAuthentication(c *gin.Context) {
 	c.Set("current_username", claims.Username)
 	c.Set("current_user_email", claims.Email)
 	c.Set("current_user_id", claims.UserId)
+	c.Set("current_user_role", claims.Role)
 	c.Next()
+}
+
+func AdminAuthentication(c *gin.Context) {
+	currentUserRole, ok := c.Get("current_user_role")
+	if !ok {
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"status": "failed", "Message": "role not found in the context"})
+		return
+	}
+
+	if currentUserRole.(string) == "admin" {
+		c.Next()
+	} else {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "failed", "Message": "You are not an admin"})
+		return
+	}
 }
 
 func CurrentUserFromContext(c *gin.Context) *types.User {

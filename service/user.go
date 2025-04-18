@@ -220,7 +220,7 @@ func (u *userService) GenerateUserAccessToken(user *types.User, ctx context.Cont
 		return token, nil
 	}
 
-	claims := &dtos.JWTClaims{Username: user.Name, Email: user.Email, UserId: user.ID.String(),
+	claims := &dtos.JWTClaims{Username: user.Name, Email: user.Email, UserId: user.ID.String(), Role: user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

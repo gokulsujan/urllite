@@ -6,5 +6,6 @@ type JWTClaims struct {
 	Username string
 	UserId   string
 	Email    string
+	Role     string
 	jwt.RegisteredClaims
 }

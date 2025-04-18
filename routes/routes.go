@@ -23,11 +23,12 @@ func MountHTTPRoutes(r *gin.Engine) {
 		userGroup := authenticatedApis.Group("/user")
 		{
 			userGroup.POST("/", userHandlers.CreateUser)
-			userGroup.GET("/", userHandlers.GetUsers)
 			userGroup.GET("/:id", userHandlers.GetUserByID)
 			userGroup.PATCH("/:id", userHandlers.UpdateUserByID)
-			userGroup.DELETE("/:id", userHandlers.DeleteUserByID)
-			userGroup.POST("/:id/make-admin", userHandlers.MakeAdmin)
+
+			userGroup.GET("/", auth.AdminAuthentication, userHandlers.GetUsers)
+			userGroup.DELETE("/:id", auth.AdminAuthentication, userHandlers.DeleteUserByID)
+			userGroup.POST("/:id/make-admin", auth.AdminAuthentication, userHandlers.MakeAdmin)
 		}
 
 		urlGroup := authenticatedApis.Group("/url")
