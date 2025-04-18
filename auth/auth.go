@@ -50,7 +50,7 @@ func UserAuthentication(c *gin.Context) {
 }
 
 func AdminAuthentication(c *gin.Context) {
-	currentUserRole, ok := c.Get("current_user_role")
+		currentUserRole, ok := c.Get("current_user_role")
 	if !ok {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"status": "failed", "Message": "role not found in the context"})
 		return

@@ -90,8 +90,8 @@ func (s *store) GetUserByID(id string) (*types.User, error) {
 
 func (s *store) GetUserByEmail(email string) (*types.User, error) {
 	var user types.User
-	getUserQuery := `SELECT id, name, email, mobile, verified_email, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? ALLOW FILTERING`
-	if err := s.DBSession.Query(getUserQuery, email).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
+	getUserQuery := `SELECT id, name, email, mobile, verified_email, status, role, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? ALLOW FILTERING`
+	if err := s.DBSession.Query(getUserQuery, email).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.Role, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 		return nil, err
 	}
 
