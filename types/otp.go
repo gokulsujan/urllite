@@ -11,6 +11,7 @@ type Otp struct {
 	UserID    gocql.UUID `json:"user_id"`
 	Key       string     `json:"key"`
 	Otp       string     `json:"otp"`
+	Status    string     `json:"status"`
 	CreatedAt time.Time  `json:"created_at"`
 	ExpiredAt time.Time  `json:"expired_at"`
 }

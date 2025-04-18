@@ -44,7 +44,8 @@ type Store interface {
 
 	// OTP
 	CreateOtp(otp *types.Otp) (*types.Otp, error)
-	GetOtpByUserIdAndOtp(userId, key, otp string) ([]*types.Otp, error)
+	GetOtpByUserIdAndOtp(userId, key, otpValue string) ([]*types.Otp, error)
+	ChangeOtpStatus(otp *types.Otp, status string) error
 }
 
 var CASSANDRA_HOST, CASSANDRA_KEYSPACE string
@@ -73,8 +74,8 @@ func (s *store) CreateUser(user *types.User) error {
 
 func (s *store) GetUserByID(id string) (*types.User, error) {
 	var user types.User
-	getUserQueryById := "SELECT  id, name, email, mobile, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".users where id = ?"
-	if err := s.DBSession.Query(getUserQueryById, id).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
+	getUserQueryById := "SELECT  id, name, email, mobile, verified_email, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".users where id = ?"
+	if err := s.DBSession.Query(getUserQueryById, id).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 		return nil, err
 	}
 
@@ -91,8 +92,8 @@ func (s *store) GetUserByID(id string) (*types.User, error) {
 
 func (s *store) GetUserByEmail(email string) (*types.User, error) {
 	var user types.User
-	getUserQuery := `SELECT id, name, email, mobile, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? ALLOW FILTERING`
-	if err := s.DBSession.Query(getUserQuery, email).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
+	getUserQuery := `SELECT id, name, email, mobile, verified_email, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users WHERE email = ? ALLOW FILTERING`
+	if err := s.DBSession.Query(getUserQuery, email).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 		return nil, err
 	}
 
@@ -108,7 +109,7 @@ func (s *store) GetUserByEmail(email string) (*types.User, error) {
 
 func (s *store) SearchUsers(filter types.UserFilter) ([]*types.User, error) {
 	var users []*types.User
-	searchUsersQuery := `SELECT id, name, email, mobile, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users`
+	searchUsersQuery := `SELECT id, name, email, mobile, verified_email, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users`
 	if filter.Name != "" || filter.Email != "" || filter.Mobile != "" || filter.Status != "" {
 		searchUsersQuery += ` WHERE`
 	}
@@ -169,7 +170,7 @@ func (s *store) SearchUsers(filter types.UserFilter) ([]*types.User, error) {
 	// Iterate over the results
 	for {
 		var user types.User
-		if !iter.Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt) {
+		if !iter.Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt) {
 			break
 		}
 		if user.DeletedAt.IsZero() {
@@ -371,10 +372,10 @@ func (s *store) DeleteUrlLogsByUrlId(urlID string, deletedTime time.Time) error 
 }
 
 func (s *store) CreateOtp(otp *types.Otp) (*types.Otp, error) {
-	otpInsertQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".otp (id, user_id, key, otp, created_at, expired_at) VALUES (?, ?, ?, ?, ?, ?)"
+	otpInsertQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".otp (id, user_id, key, otp, status, created_at, expired_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
 	otp.ID = gocql.TimeUUID()
 	otp.CreatedAt = time.Now()
-	err := s.DBSession.Query(otpInsertQuery, otp.ID, otp.UserID, otp.Key, otp.Otp, otp.CreatedAt, otp.ExpiredAt).Exec()
+	err := s.DBSession.Query(otpInsertQuery, otp.ID, otp.UserID, otp.Key, otp.Otp, otp.Status, otp.CreatedAt, otp.ExpiredAt).Exec()
 	if err != nil {
 		return nil, err
 	}
@@ -393,17 +394,24 @@ func (s *store) GetOtpByUserId(userId string) (*types.Otp, error) {
 	return otp, nil
 }
 
-func (s *store) GetOtpByUserIdAndOtp(userId, key, otp string) ([]*types.Otp, error) {
+func (s *store) GetOtpByUserIdAndOtp(userId, key, otpStr string) ([]*types.Otp, error) {
 	var otps []*types.Otp
-	otpGetQuery := "SELECT id, user_id, key, otp, created_at, expired_at FROM " + CASSANDRA_KEYSPACE + ".otp WHERE user_id =? AND created_at >= toTimestamp(now() - 600000) AND key = ? AND otp = ? ALLOW FILTERING"
-	iter := s.DBSession.Query(otpGetQuery, userId, key, otp).Iter()
+	otpGetQuery := "SELECT id, user_id, key, otp, status, created_at, expired_at FROM " + CASSANDRA_KEYSPACE + ".otp WHERE user_id =? AND expired_at > toTimestamp(now()) AND key = ? AND otp = ? ALLOW FILTERING"
+	iter := s.DBSession.Query(otpGetQuery, userId, key, otpStr).Iter()
 	defer iter.Close()
 	for {
-		var otp *types.Otp
-		if !iter.Scan(otp.ID, otp.UserID, otp.Key, otp.CreatedAt, otp.ExpiredAt) {
+		var otp types.Otp
+		if !iter.Scan(&otp.ID, &otp.UserID, &otp.Key, &otp.Otp, &otp.Status, &otp.CreatedAt, &otp.ExpiredAt) {
+			scannerErr := iter.Scanner().Err()
+			if scannerErr != nil {
+				return nil, scannerErr
+			}
 			break
 		}
-		otps = append(otps, otp)
+
+		if otp.Status == "pending" {
+			otps = append(otps, &otp)
+		}
 	}
 
 	if len(otps) == 0 {
@@ -411,4 +419,9 @@ func (s *store) GetOtpByUserIdAndOtp(userId, key, otp string) ([]*types.Otp, err
 	}
 
 	return otps, nil
+}
+
+func (s *store) ChangeOtpStatus(otp *types.Otp, status string) error {
+	updateOtpQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".otp SET status = ? WHERE id = ?"
+	return s.DBSession.Query(updateOtpQuery, status, otp.ID).Exec()
 }

@@ -117,6 +117,7 @@ func migrateOtpTable() {
 		user_id UUID,
 		key TEXT,
 		otp TEXT,
+		status TEXT,
 		created_at TIMESTAMP,
 		expired_at TIMESTAMP
 	);`

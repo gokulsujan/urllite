@@ -21,6 +21,8 @@ type UserHandler interface {
 
 	Signup(c *gin.Context)
 	Login(c *gin.Context)
+	SendEmailVerificationOtp(c *gin.Context)
+	VerifyEmail(c *gin.Context)
 }
 
 type userHandler struct {
@@ -194,4 +196,58 @@ func (h *userHandler) ChangePassword(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Password changed successfully"})
+}
+
+func (h *userHandler) SendEmailVerificationOtp(c *gin.Context) {
+	var emailVerificationDto dtos.EmailVerificationDTO
+	err := c.ShouldBindJSON(&emailVerificationDto)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request", "result": gin.H{"error": err.Error()}})
+		return
+	}
+
+	user, appErr := h.userService.GetUserByEmail(emailVerificationDto.Email)
+	if err != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No user found"})
+		return
+	}
+
+	appErr = h.userService.SendEmailVerificationOtp(emailVerificationDto.Email)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "OTP Delivered successfully"})
+}
+
+func (h *userHandler) VerifyEmail(c *gin.Context) {
+	var emailVerificationDto dtos.EmailVerificationDTO
+	err := c.ShouldBindJSON(&emailVerificationDto)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request", "result": gin.H{"error": err.Error()}})
+		return
+	}
+
+	user, appErr := h.userService.GetUserByEmail(emailVerificationDto.Email)
+	if err != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No user found"})
+		return
+	}
+
+	appErr = h.userService.VerifyEmail(emailVerificationDto.Email, emailVerificationDto.Otp)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Email veified successfully"})
 }

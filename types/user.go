@@ -26,3 +26,8 @@ type UserFilter struct {
 	Mobile string     `json:"mobile_number"`
 	Status string     `json:"status"`
 }
+
+
+func (u *User) IsEmailVerified() bool {
+	return u.Email == u.VerifiedEmail
+}

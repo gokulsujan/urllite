@@ -14,6 +14,8 @@ func MountHTTPRoutes(r *gin.Engine) {
 	r.POST("/signup", security.RatelimittingMiddleware, userHandlers.Signup)
 	r.POST("/login", security.RatelimittingMiddleware, userHandlers.Login)
 	r.POST("/change-password", auth.UserAuthentication, userHandlers.ChangePassword)
+	r.POST("/verify-email-otp", userHandlers.SendEmailVerificationOtp)
+	r.POST("/verify-email", userHandlers.VerifyEmail)
 	r.GET("/:short_url", urlHandler.RedirectToLongUrl)
 
 	authenticatedApis := r.Group("/api/v1", auth.UserAuthentication)
