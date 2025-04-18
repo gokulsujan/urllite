@@ -19,6 +19,7 @@ type UrlService interface {
 	GetUrlByShortUrl(short_url string) (*types.URL, *types.ApplicationError)
 	DeleteUrlById(id, user_id string) *types.ApplicationError
 	GetUrlsOfUser(user_id string) ([]*types.URL, *types.ApplicationError)
+	GetUrlLogsByUrl(url *types.URL) ([]*types.UrlLog, *types.ApplicationError)
 }
 
 func NewUrlService() UrlService {
@@ -146,4 +147,17 @@ func (u *urlService) DeleteUrlById(id, user_id string) *types.ApplicationError {
 	}
 
 	return nil
+}
+
+func (u *urlService) GetUrlLogsByUrl(url *types.URL) ([]*types.UrlLog, *types.ApplicationError) {
+	logs, err := u.store.GetUrlLogsByUrlId(url.ID.String())
+	if err != nil {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to find logs",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+
+	return logs, nil
 }
