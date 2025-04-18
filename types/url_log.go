@@ -12,6 +12,7 @@ type UrlLog struct {
 	VisitedAt      time.Time  `json:"visited_at"`
 	RedirectStatus string     `json:"redirect_status"`
 	HttpStatusCode int        `json:"http_status_code"`
+	ClientIP       string     `json:"client_ip"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

@@ -93,6 +93,7 @@ func migrateUrlLogTable() {
 		visited_at TIMESTAMP,
 		redirect_status TEXT,
 		http_status_code INT,
+		client_ip TEXT,
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP

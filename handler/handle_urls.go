@@ -16,12 +16,14 @@ type UrlHandler interface {
 	DeleteURLById(c *gin.Context)
 }
 type urlHandler struct {
-	urlService service.UrlService
+	urlService    service.UrlService
+	urlLogService service.UrlLogService
 }
 
 func NewUrlHandler() UrlHandler {
 	urlService := service.NewUrlService()
-	return &urlHandler{urlService: urlService}
+	logService := service.NewUrlLogService()
+	return &urlHandler{urlService: urlService, urlLogService: logService}
 }
 
 func (u *urlHandler) Create(c *gin.Context) {
@@ -58,7 +60,8 @@ func (u *urlHandler) RedirectToLongUrl(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusPermanentRedirect, url.LongUrl)
+	u.urlLogService.CreateUrlLogByUrl(url, c.ClientIP())
+	c.Redirect(http.StatusFound, url.LongUrl)
 }
 
 func (u *urlHandler) GetUrlByID(c *gin.Context) {
@@ -109,7 +112,12 @@ func (u *urlHandler) DeleteURLById(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current user id from context"})
 		return
 	}
-	appErr := u.urlService.DeleteUrlById(urlId, current_user_id.(string))
+	appErr := u.urlLogService.DeleteUrlLogByUrl(urlId)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+	appErr = u.urlService.DeleteUrlById(urlId, current_user_id.(string))
 	if appErr != nil {
 		appErr.HttpResponse(c)
 		return

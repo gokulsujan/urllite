@@ -315,9 +315,9 @@ func (s *store) DeleteURL(url *types.URL) error {
 }
 
 func (s *store) CreateUrlLog(log *types.UrlLog) error {
-	insertUrlLogQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".url_logs (id, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-	log.ID, log.VisitedAt, log.CreatedAt, log.UpdatedAt = gocql.TimeUUID(), time.Now(), time.Now(), time.Now()
-	return s.DBSession.Query(insertUrlLogQuery, log.ID, log.UrlID, log.VisitedAt, log.RedirectStatus, log.HttpStatusCode, log.CreatedAt, log.UpdatedAt).Exec()
+	insertUrlLogQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".url_logs (id, url_id, visited_at, redirect_status, http_status_code, client_ip, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+	log.ID, log.CreatedAt, log.UpdatedAt = gocql.TimeUUID(), time.Now(), time.Now()
+	return s.DBSession.Query(insertUrlLogQuery, log.ID, log.UrlID, log.VisitedAt, log.RedirectStatus, log.HttpStatusCode, log.ClientIP, log.CreatedAt, log.UpdatedAt).Exec()
 }
 
 func (s *store) GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error) {
