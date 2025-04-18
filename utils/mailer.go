@@ -14,6 +14,7 @@ type mailer struct {
 }
 
 type Mailer interface {
+	SendOtpForEmailVerification(user *types.User, otp *types.Otp) error
 }
 
 func NewMailer() Mailer {

@@ -13,6 +13,7 @@ import (
 	"urllite/store"
 	"urllite/types"
 	"urllite/types/dtos"
+	"urllite/utils"
 
 	"github.com/gocql/gocql"
 	"github.com/golang-jwt/jwt/v5"
@@ -263,7 +264,15 @@ func (u *userService) SendEmailVerificationOtp(emailID string) *types.Applicatio
 	otp.ExpiredAt = time.Now().Add(10 * time.Minute)
 	u.store.CreateOtp(otp)
 
-	// TODO -> Sent Otp using SMTP server
+	mailer := utils.NewMailer()
+	err := mailer.SendOtpForEmailVerification(user, otp)
+	if err != nil {
+		return &types.ApplicationError{
+			Message:        "Unable sent email",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
 	return nil
 }
 
