@@ -23,6 +23,7 @@ func migrateUserTable() {
 		verified_email TEXT,
 		mobile TEXT,
 		status TEXT,
+		role TEXT,
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP

@@ -27,6 +27,7 @@ func MountHTTPRoutes(r *gin.Engine) {
 			userGroup.GET("/:id", userHandlers.GetUserByID)
 			userGroup.PATCH("/:id", userHandlers.UpdateUserByID)
 			userGroup.DELETE("/:id", userHandlers.DeleteUserByID)
+			userGroup.POST("/:id/make-admin", userHandlers.MakeAdmin)
 		}
 
 		urlGroup := authenticatedApis.Group("/url")

@@ -23,6 +23,7 @@ type UserHandler interface {
 	Login(c *gin.Context)
 	SendEmailVerificationOtp(c *gin.Context)
 	VerifyEmail(c *gin.Context)
+	MakeAdmin(c *gin.Context)
 }
 
 type userHandler struct {
@@ -250,4 +251,19 @@ func (h *userHandler) VerifyEmail(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Email veified successfully"})
+}
+
+func (h *userHandler) MakeAdmin(c *gin.Context) {
+	userId := c.Param("id")
+	if userId == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "No user id found"})
+		return
+	}
+
+	appErr := h.userService.MakeAdmin(userId)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "User role changed to admin"})
 }

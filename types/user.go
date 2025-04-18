@@ -13,6 +13,7 @@ type User struct {
 	VerifiedEmail string     `json:"-"` // json ignore field
 	Mobile        string     `json:"mobile"`
 	Status        string     `json:"status"`
+	Role          string     `json:"status"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -26,7 +27,6 @@ type UserFilter struct {
 	Mobile string     `json:"mobile_number"`
 	Status string     `json:"status"`
 }
-
 
 func (u *User) IsEmailVerified() bool {
 	return u.Email == u.VerifiedEmail

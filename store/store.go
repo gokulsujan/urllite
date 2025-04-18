@@ -64,18 +64,16 @@ func NewStore() Store {
 }
 
 func (s *store) CreateUser(user *types.User) error {
-	// Implement user creation logic
-	createUserQuery := `INSERT INTO ` + CASSANDRA_KEYSPACE + `.users (id, name, email, mobile, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)`
+	createUserQuery := `INSERT INTO ` + CASSANDRA_KEYSPACE + `.users (id, name, email, mobile, status, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
 	user.CreatedAt, user.UpdatedAt, user.ID = time.Now(), time.Now(), gocql.TimeUUID() // Generate a new UUID for the user adn set timestamps
-	user.Status = "active"                                                             // Set default status to active
-
-	return s.DBSession.Query(createUserQuery, user.ID, user.Name, user.Email, user.Mobile, user.Status, user.CreatedAt, user.UpdatedAt).Exec()
+	user.Status, user.Role = "active", "user"
+	return s.DBSession.Query(createUserQuery, user.ID, user.Name, user.Email, user.Mobile, user.Status, user.Role, user.CreatedAt, user.UpdatedAt).Exec()
 }
 
 func (s *store) GetUserByID(id string) (*types.User, error) {
 	var user types.User
-	getUserQueryById := "SELECT  id, name, email, mobile, verified_email, status, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".users where id = ?"
-	if err := s.DBSession.Query(getUserQueryById, id).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
+	getUserQueryById := "SELECT  id, name, email, mobile, verified_email, status, role, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".users where id = ?"
+	if err := s.DBSession.Query(getUserQueryById, id).Consistency(gocql.One).Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.Role, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt); err != nil {
 		return nil, err
 	}
 
@@ -198,8 +196,8 @@ func (s *store) UpdateUser(user *types.User) error {
 		return fmt.Errorf("No user id found")
 	}
 
-	userUpdateQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".users SET name = ?, email = ?, mobile = ?, verified_email = ?, status = ?, updated_at = ? WHERE id = ?"
-	return s.DBSession.Query(userUpdateQuery, user.Name, user.Email, user.Mobile, user.VerifiedEmail, user.Status, time.Now(), user.ID).Exec()
+	userUpdateQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".users SET name = ?, email = ?, mobile = ?, verified_email = ?, status = ?, role =?, updated_at = ? WHERE id = ?"
+	return s.DBSession.Query(userUpdateQuery, user.Name, user.Email, user.Mobile, user.VerifiedEmail, user.Status, user.Role, time.Now(), user.ID).Exec()
 }
 
 func (s *store) DeleteUser(user *types.User) error {

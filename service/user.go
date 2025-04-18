@@ -33,6 +33,7 @@ type UserService interface {
 	GenerateUserAccessToken(user *types.User, ctx context.Context) (string, *types.ApplicationError)
 	SendEmailVerificationOtp(emailID string) *types.ApplicationError
 	VerifyEmail(emailID, otpStr string) *types.ApplicationError
+	MakeAdmin(user_id string) *types.ApplicationError
 }
 
 func NewUserService() UserService {
@@ -351,4 +352,23 @@ func (u *userService) VerifyEmail(emailID, otpStr string) *types.ApplicationErro
 	}
 	return nil
 
+}
+
+func (u *userService) MakeAdmin(user_id string) *types.ApplicationError {
+	user, appErr := u.GetUserByID(user_id)
+	if appErr != nil {
+		return appErr
+	}
+
+	user.Role = "admin"
+	err := u.store.UpdateUser(user)
+	if err != nil {
+		return &types.ApplicationError{
+			Message:        "Unable to update user",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+
+	return nil
 }
