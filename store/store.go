@@ -41,6 +41,9 @@ type Store interface {
 	CreateUrlLog(log *types.UrlLog) error
 	DeleteUrlLogsByUrlId(urlID string, deletedTime time.Time) error
 	GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error)
+
+	// OTP
+	CreateOtp(otp *types.Otp) (*types.Otp, error)
 }
 
 var CASSANDRA_HOST, CASSANDRA_KEYSPACE string
@@ -364,4 +367,27 @@ func (s *store) DeleteUrlLogsByUrlId(urlID string, deletedTime time.Time) error 
 		s.DBSession.Query(deleteUrlLogQuery, deletedTime, log.ID).Exec()
 	}
 	return nil
+}
+
+func (s *store) CreateOtp(otp *types.Otp) (*types.Otp, error) {
+	otpInsertQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".otp (id, user_id, key, otp, created_at, expired_at) VALUES (?, ?, ?, ?, ?, ?)"
+	otp.ID = gocql.TimeUUID()
+	otp.CreatedAt = time.Now()
+	err := s.DBSession.Query(otpInsertQuery, otp.ID, otp.UserID, otp.Key, otp.Otp, otp.CreatedAt, otp.ExpiredAt).Exec()
+	if err != nil {
+		return nil, err
+	}
+
+	return otp, nil
+}
+
+func (s *store) GetOtpByUserId(userId string) (*types.Otp, error) {
+	var otp *types.Otp
+	otpGetQuery := "SELECT id, user_id, key, otp, created_at, expired_at FROM " + CASSANDRA_KEYSPACE + ".otp WHERE user_id =?"
+	err := s.DBSession.Query(otpGetQuery, userId).Consistency(gocql.One).Scan(otp.ID, otp.UserID, otp.Otp, otp.CreatedAt, otp.ExpiredAt)
+	if err != nil {
+		return nil, err
+	}
+
+	return otp, nil
 }

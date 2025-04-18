@@ -10,6 +10,7 @@ func AutoMigrateTables() {
 	migratePasswordTable()
 	migrateUrlTable()
 	migrateUrlLogTable()
+	migrateOtpTable()
 }
 
 func migrateUserTable() {
@@ -97,6 +98,27 @@ func migrateUrlLogTable() {
 		created_at TIMESTAMP,
 		updated_at TIMESTAMP,
 		deleted_at TIMESTAMP
+	);`
+
+	session, err := database.CreateSession()
+	if err != nil {
+		log.Fatal("Unable to create session:", err.Error())
+	}
+	defer session.Close()
+	if err := session.Query(createUrlLogTable).Exec(); err != nil {
+		log.Fatal("Unable to create url table:", err.Error())
+	}
+}
+
+func migrateOtpTable() {
+	createUrlLogTable := `
+	CREATE TABLE IF NOT EXISTS otp (
+		id UUID PRIMARY KEY,
+		user_id UUID,
+		key TEXT,
+		otp TEXT,
+		created_at TIMESTAMP,
+		expired_at TIMESTAMP
 	);`
 
 	session, err := database.CreateSession()
