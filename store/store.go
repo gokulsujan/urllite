@@ -50,6 +50,9 @@ func NewStore() Store {
 	CASSANDRA_KEYSPACE = os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
 	session, err := gocql.NewCluster(CASSANDRA_HOST).CreateSession()
 	if err != nil {
+		fmt.Println("Host: " + CASSANDRA_HOST)
+		fmt.Println("Keyspave: " + CASSANDRA_KEYSPACE)
+		fmt.Println("Error: " + err.Error())
 		panic(err)
 	}
 	return &store{DBSession: session}

@@ -4,11 +4,13 @@ import (
 	"net/http"
 	"time"
 	"urllite/store"
+	"urllite/tasks"
 	"urllite/types"
 )
 
 type urlLogService struct {
 	store store.Store
+	task  tasks.UrlLog
 }
 
 type UrlLogService interface {
@@ -18,21 +20,12 @@ type UrlLogService interface {
 
 func NewUrlLogService() UrlLogService {
 	s := store.NewStore()
-	return &urlLogService{store: s}
+	t := tasks.NewUrlLogTask()
+	return &urlLogService{store: s, task: t}
 }
 
 func (uls *urlLogService) CreateUrlLogByUrl(url *types.URL, clientIp string) *types.ApplicationError {
-	log := &types.UrlLog{UrlID: url.ID, VisitedAt: time.Now(), ClientIP: clientIp}
-	resp, err := http.Get(url.LongUrl)
-	if err != nil {
-		log.HttpStatusCode = http.StatusInternalServerError
-		log.RedirectStatus = err.Error()
-	} else {
-		log.HttpStatusCode = resp.StatusCode
-		log.RedirectStatus = resp.Status
-	}
-
-	err = uls.store.CreateUrlLog(log)
+	task, err := uls.task.CreateLog(url.ID.String(), clientIp, time.Now())
 	if err != nil {
 		return &types.ApplicationError{
 			Message:        "Unable to create the log",
@@ -40,7 +33,7 @@ func (uls *urlLogService) CreateUrlLogByUrl(url *types.URL, clientIp string) *ty
 			Err:            err,
 		}
 	}
-
+	go tasks.PerformNow(task)
 	return nil
 }
 
