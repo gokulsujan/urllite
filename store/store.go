@@ -44,6 +44,7 @@ type Store interface {
 
 	// OTP
 	CreateOtp(otp *types.Otp) (*types.Otp, error)
+	GetOtpByUserIdAndOtp(userId, key, otp string) ([]*types.Otp, error)
 }
 
 var CASSANDRA_HOST, CASSANDRA_KEYSPACE string
@@ -390,4 +391,24 @@ func (s *store) GetOtpByUserId(userId string) (*types.Otp, error) {
 	}
 
 	return otp, nil
+}
+
+func (s *store) GetOtpByUserIdAndOtp(userId, key, otp string) ([]*types.Otp, error) {
+	var otps []*types.Otp
+	otpGetQuery := "SELECT id, user_id, key, otp, created_at, expired_at FROM " + CASSANDRA_KEYSPACE + ".otp WHERE user_id =? AND created_at >= toTimestamp(now() - 600000) AND key = ? AND otp = ? ALLOW FILTERING"
+	iter := s.DBSession.Query(otpGetQuery, userId, key, otp).Iter()
+	defer iter.Close()
+	for {
+		var otp *types.Otp
+		if !iter.Scan(otp.ID, otp.UserID, otp.Key, otp.CreatedAt, otp.ExpiredAt) {
+			break
+		}
+		otps = append(otps, otp)
+	}
+
+	if len(otps) == 0 {
+		return nil, nil
+	}
+
+	return otps, nil
 }

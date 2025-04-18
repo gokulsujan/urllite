@@ -3,8 +3,10 @@ package service
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"urllite/cache"
@@ -28,6 +30,8 @@ type UserService interface {
 	UpdateUserByID(id string, user types.User) *types.ApplicationError
 	DeleteUserByID(id string) *types.ApplicationError
 	GenerateUserAccessToken(user *types.User, ctx context.Context) (string, *types.ApplicationError)
+	SendEmailVerificationOtp(emailID string) *types.ApplicationError
+	VerifyEmail(emailID, otpStr string) *types.ApplicationError
 }
 
 func NewUserService() UserService {
@@ -213,7 +217,7 @@ func (u *userService) GenerateUserAccessToken(user *types.User, ctx context.Cont
 
 		return token, nil
 	}
-	
+
 	claims := &dtos.JWTClaims{Username: user.Name, Email: user.Email, UserId: user.ID.String(),
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
@@ -235,4 +239,73 @@ func (u *userService) GenerateUserAccessToken(user *types.User, ctx context.Cont
 	redicClient.Set(redisTokenKey, accessToken, 23*time.Hour)
 
 	return accessToken, nil
+}
+
+func (u *userService) SendEmailVerificationOtp(emailID string) *types.ApplicationError {
+	// Verify user
+	user, appErr := u.GetUserByEmail(emailID)
+	if appErr != nil {
+		return appErr
+	}
+
+	if user == nil {
+		return &types.ApplicationError{
+			Message:        "User not found",
+			HttpStatusCode: http.StatusNotFound,
+		}
+	}
+
+	// Otp generation
+	var otp *types.Otp
+	otp.Key = "VERIFY_EMAIL_OTP_" + emailID
+	rand.Seed(time.Now().UnixNano())
+	otp.Otp = strconv.Itoa(rand.Intn(900000) + 100000)
+	otp.ExpiredAt = time.Now().Add(10 * time.Minute)
+	u.store.CreateOtp(otp)
+
+	// TODO -> Sent Otp using SMTP server
+	return nil
+}
+
+func (u *userService) VerifyEmail(emailID, otpStr string) *types.ApplicationError {
+	// Verify user
+	user, appErr := u.GetUserByEmail(emailID)
+	if appErr != nil {
+		return appErr
+	}
+
+	if user == nil {
+		return &types.ApplicationError{
+			Message:        "User not found",
+			HttpStatusCode: http.StatusNotFound,
+		}
+	}
+
+	// Getting otp
+	key := "VERIFY_EMAIL_OTP_" + user.Email
+	otps, err := u.store.GetOtpByUserIdAndOtp(user.ID.String(), key, otpStr)
+	if err != nil {
+		return &types.ApplicationError{
+			Message:        "Unable to find otp",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+
+	if otps == nil {
+		return &types.ApplicationError{
+			Message:        "Not a valid otp",
+			HttpStatusCode: http.StatusBadRequest,
+		}
+
+	}
+
+	// Verify email
+	user.VerifiedEmail = user.Email
+	appErr = u.UpdateUserByID(user.ID.String(), *user)
+	if appErr != nil {
+		return appErr
+	}
+	return nil
+
 }
