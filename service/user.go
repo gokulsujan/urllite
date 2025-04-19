@@ -42,6 +42,12 @@ func NewUserService() UserService {
 }
 
 func (u userService) Create(user *types.User) *types.ApplicationError {
+	if !utils.EmailValidation(user.Email) {
+		return &types.ApplicationError{
+			Message:        "Invalid Email ID",
+			HttpStatusCode: http.StatusNotAcceptable,
+		}
+	}
 	// Check for email id existence
 	existingUser, err := u.store.GetUserByEmail(user.Email)
 	if err != nil && err != gocql.ErrNotFound {
