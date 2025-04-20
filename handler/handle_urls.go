@@ -88,13 +88,13 @@ func (u *urlHandler) GetUrlByID(c *gin.Context) {
 		return
 	}
 
-	logs, appErr := u.urlService.GetUrlLogsByUrl(url)
+	urlMetadata, appErr := u.urlService.GetUrlDatas(url)
 	if appErr != nil {
 		appErr.HttpResponse(c)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Url fetched successfully", "result": gin.H{"url": url, "logs": logs}})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Url fetched successfully", "result": gin.H{"url": url, "meta": urlMetadata}})
 }
 
 func (u *urlHandler) GetURLs(c *gin.Context) {

@@ -6,6 +6,7 @@ import (
 	"urllite/types"
 	"urllite/utils"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gocql/gocql"
 )
 
@@ -20,6 +21,7 @@ type UrlService interface {
 	DeleteUrlById(id, user_id string) *types.ApplicationError
 	GetUrlsOfUser(user_id string) ([]*types.URL, *types.ApplicationError)
 	GetUrlLogsByUrl(url *types.URL) ([]*types.UrlLog, *types.ApplicationError)
+	GetUrlDatas(url *types.URL) (map[string]interface{}, *types.ApplicationError)
 }
 
 func NewUrlService() UrlService {
@@ -160,4 +162,38 @@ func (u *urlService) GetUrlLogsByUrl(url *types.URL) ([]*types.UrlLog, *types.Ap
 	}
 
 	return logs, nil
+}
+
+func (u *urlService) GetUrlDatas(url *types.URL) (map[string]interface{}, *types.ApplicationError) {
+	resp, err := http.Get(url.LongUrl)
+	if err != nil {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to find meta data",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+	defer resp.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to find meta data",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+
+	title := doc.Find("title").Text()
+	favicon, _ := doc.Find("link[rel~='icon']").Attr("href")
+
+	urlInteractions, err := u.store.CountInteractions(url.ID.String())
+	if err != nil {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to get url interactions count",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+	return map[string]interface{}{"title": title, "favicon": favicon, "interactions": urlInteractions}, nil
 }

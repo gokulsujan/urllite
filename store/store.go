@@ -41,6 +41,7 @@ type Store interface {
 	CreateUrlLog(log *types.UrlLog) error
 	DeleteUrlLogsByUrlId(urlID string, deletedTime time.Time) error
 	GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error)
+	CountInteractions(urlId string) (int, error)
 
 	// OTP
 	CreateOtp(otp *types.Otp) (*types.Otp, error)
@@ -426,4 +427,15 @@ func (s *store) GetOtpByUserIdAndOtp(userId, key, otpStr string) ([]*types.Otp, 
 func (s *store) ChangeOtpStatus(otp *types.Otp, status string) error {
 	updateOtpQuery := "UPDATE " + CASSANDRA_KEYSPACE + ".otp SET status = ? WHERE id = ?"
 	return s.DBSession.Query(updateOtpQuery, status, otp.ID).Exec()
+}
+
+func (s *store) CountInteractions(urlId string) (int, error) {
+	var count int
+	countInteractonsQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id =? ALLOW FILTERING"
+	err := s.DBSession.Query(countInteractonsQuery, urlId).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }
