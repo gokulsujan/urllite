@@ -328,7 +328,7 @@ func (s *store) CreateUrlLog(log *types.UrlLog) error {
 }
 
 func (s *store) GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error) {
-	searchLogsQuery := "SELECT id, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id = ? ALLOW FILTERING"
+	searchLogsQuery := "SELECT id, client_ip, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id = ? ALLOW FILTERING"
 	url, err := s.GetUrlByID(urlID)
 	if err != nil {
 		return nil, err
@@ -339,7 +339,7 @@ func (s *store) GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error) {
 
 	for {
 		var log types.UrlLog
-		if !iter.Scan(&log.ID, &log.UrlID, &log.VisitedAt, &log.RedirectStatus, &log.HttpStatusCode, &log.CreatedAt, &log.UpdatedAt, &log.DeletedAt) {
+		if !iter.Scan(&log.ID, &log.ClientIP, &log.UrlID, &log.VisitedAt, &log.RedirectStatus, &log.HttpStatusCode, &log.CreatedAt, &log.UpdatedAt, &log.DeletedAt) {
 			break
 		}
 		if log.DeletedAt.IsZero() {
