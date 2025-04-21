@@ -37,6 +37,14 @@ func main() {
 		if !ok {
 			fmt.Println("Something went wrong for client ip: " + clientIP)
 		}
+		city, ok := p["city"].(string)
+		if !ok {
+			fmt.Println("Something went wrong for city: " + city)
+		}
+		country, ok := p["country"].(string)
+		if !ok {
+			fmt.Println("Something went wrong for country: " + country)
+		}
 
 		// Create log in DB
 		s := store.NewStore()
@@ -49,7 +57,7 @@ func main() {
 		if err != nil {
 			return err
 		}
-		urlLog := &types.UrlLog{UrlID: urlidUUID, ClientIP: clientIP, VisitedAt: time.Now()}
+		urlLog := &types.UrlLog{UrlID: urlidUUID, ClientIP: clientIP, VisitedAt: time.Now(), City: city, Country: country}
 		resp, err := http.Get(url.LongUrl)
 		if err != nil {
 			urlLog.HttpStatusCode = http.StatusInternalServerError

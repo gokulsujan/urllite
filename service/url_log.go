@@ -6,6 +6,7 @@ import (
 	"urllite/store"
 	"urllite/tasks"
 	"urllite/types"
+	"urllite/utils"
 )
 
 type urlLogService struct {
@@ -25,7 +26,9 @@ func NewUrlLogService() UrlLogService {
 }
 
 func (uls *urlLogService) CreateUrlLogByUrl(url *types.URL, clientIp string) *types.ApplicationError {
-	task, err := uls.task.CreateLog(url.ID.String(), clientIp, time.Now())
+	location, err := utils.GetIPAddressLocation(clientIp)
+
+	task, err := uls.task.CreateLog(url.ID.String(), clientIp, location["country"], location["city"], time.Now())
 	if err != nil {
 		return &types.ApplicationError{
 			Message:        "Unable to create the log",

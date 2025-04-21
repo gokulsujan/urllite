@@ -90,16 +90,19 @@ func migrateUrlLogTable() {
 	// Create the url table if it doesn't exist
 	createUrlLogTable := `
 	CREATE TABLE IF NOT EXISTS url_logs (
-		id UUID PRIMARY KEY,
-		url_id UUID,
-		visited_at TIMESTAMP,
-		redirect_status TEXT,
-		http_status_code INT,
-		client_ip TEXT,
-		created_at TIMESTAMP,
-		updated_at TIMESTAMP,
-		deleted_at TIMESTAMP
-	);`
+	url_id UUID,
+	id UUID,
+	visited_at TIMESTAMP,
+	redirect_status TEXT,
+	http_status_code INT,
+	client_ip TEXT,
+	city TEXT,
+	country TEXT,
+	created_at TIMESTAMP,
+	updated_at TIMESTAMP,
+	deleted_at TIMESTAMP,
+	PRIMARY KEY ((url_id), created_at, id)
+	) WITH CLUSTERING ORDER BY (created_at DESC);`
 
 	session, err := database.CreateSession()
 	if err != nil {
