@@ -37,6 +37,8 @@ func MountHTTPRoutes(r *gin.Engine) {
 			urlGroup.GET("/", urlHandler.GetURLs)
 			urlGroup.GET("/:id", urlHandler.GetUrlByID)
 			urlGroup.DELETE("/:id", urlHandler.DeleteURLById)
+			urlGroup.GET("/:id/logs", urlHandler.GetUrlLogsByUrl)
+
 		}
 	}
 }

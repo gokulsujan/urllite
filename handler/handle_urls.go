@@ -14,6 +14,7 @@ type UrlHandler interface {
 	GetUrlByID(c *gin.Context)
 	GetURLs(c *gin.Context)
 	DeleteURLById(c *gin.Context)
+	GetUrlLogsByUrl(c *gin.Context)
 }
 type urlHandler struct {
 	urlService    service.UrlService
@@ -130,4 +131,30 @@ func (u *urlHandler) DeleteURLById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Url deleted successfully"})
+}
+
+func (u *urlHandler) GetUrlLogsByUrl(c *gin.Context) {
+	urlId := c.Param("id")
+	userID, ok := c.Get("current_user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "failed", "message": "No userid in the context"})
+		return
+	}
+	url, appErr := u.urlService.GetUrlByID(urlId, userID.(string))
+	if appErr != nil {
+		appErr.HttpResponse(c)
+	}
+
+	logs, appErr := u.urlService.GetUrlLogsByUrl(url)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+	}
+
+	responseMessage := "Logs successfully fetched"
+	if logs == nil {
+		responseMessage = "No logs available"
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": responseMessage, "result": gin.H{"logs": logs}})
+
 }
