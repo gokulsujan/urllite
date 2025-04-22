@@ -26,6 +26,9 @@ type UserHandler interface {
 	MakeAdmin(c *gin.Context)
 	Profile(c *gin.Context)
 	SignupAndLogin(c *gin.Context)
+	SendForgetPasswordOtp(c *gin.Context)
+	ChangePasswordUsingOtp(c *gin.Context)
+	VerifyForgetPasswordOtp(c *gin.Context)
 }
 
 type userHandler struct {
@@ -299,6 +302,7 @@ func (h *userHandler) MakeAdmin(c *gin.Context) {
 	appErr := h.userService.MakeAdmin(userId)
 	if appErr != nil {
 		appErr.HttpResponse(c)
+		return
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "User role changed to admin"})
@@ -316,4 +320,66 @@ func (h *userHandler) Profile(c *gin.Context) {
 		appErr.HttpResponse(c)
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile fetched successfully", "result": gin.H{"user": user}})
+}
+
+func (h *userHandler) SendForgetPasswordOtp(c *gin.Context) {
+	var emailReq dtos.EmailVerificationDTO
+	err := c.ShouldBindBodyWithJSON(&emailReq)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to bind request body", "result": gin.H{"error": err.Error()}})
+		return
+	}
+
+	appErr := h.passwordService.SendForgetPasswordOtp(emailReq.Email)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Otp delivered successfully"})
+}
+
+func (h *userHandler) VerifyForgetPasswordOtp(c *gin.Context) {
+	var emailVerificationDto dtos.EmailVerificationDTO
+	err := c.ShouldBindJSON(&emailVerificationDto)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request", "result": gin.H{"error": err.Error()}})
+		return
+	}
+
+	user, appErr := h.userService.GetUserByEmail(emailVerificationDto.Email)
+	if err != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	if user == nil {
+		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No user found"})
+		return
+	}
+
+	appErr = h.passwordService.VerifyForgetPasswordOtp(emailVerificationDto.Email, emailVerificationDto.Otp)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Otp verified"})
+}
+
+func (h *userHandler) ChangePasswordUsingOtp(c *gin.Context) {
+	var changPasswordDto dtos.PasswordChangeUsingOtpDTO
+	err := c.ShouldBindBodyWithJSON(&changPasswordDto)
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request type", "result": gin.H{"error": err.Error()}})
+		return
+	}
+
+	appErr := h.passwordService.ChangePasswordUsingOtp(changPasswordDto.Email, changPasswordDto.Otp, changPasswordDto.Password)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Password changed successfully"})
 }
