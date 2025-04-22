@@ -17,10 +17,11 @@ var (
 
 type RateLimitter interface {
 	GetLimitter() *rate.Limiter
+	GetOtpLimitter() *rate.Limiter
 }
 
 type rateLimitter struct {
-	context     *gin.Context
+	context *gin.Context
 }
 
 func NewRateLimitter(c *gin.Context) RateLimitter {
@@ -35,6 +36,20 @@ func (rl *rateLimitter) GetLimitter() *rate.Limiter {
 	limitter, exists := limiters[clientIP]
 	if !exists {
 		limitter = rate.NewLimiter(rateLimit, burst)
+		limiters[clientIP] = limitter
+	}
+
+	return limitter
+}
+
+func (rl *rateLimitter) GetOtpLimitter() *rate.Limiter {
+	mu.Lock()
+	defer mu.Unlock()
+
+	clientIP := rl.context.ClientIP()
+	limitter, exists := limiters[clientIP]
+	if !exists {
+		limitter = rate.NewLimiter(rate.Every(2*time.Minute), 1)
 		limiters[clientIP] = limitter
 	}
 

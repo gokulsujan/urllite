@@ -15,3 +15,13 @@ func RatelimittingMiddleware(c *gin.Context) {
 	}
 
 }
+
+func OtpRatelimittingMiddleware(c *gin.Context) {
+	rl := NewRateLimitter(c)
+	limitter := rl.GetOtpLimitter()
+	if !limitter.Allow() {
+		c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"status": "failed", "message": "Otp limit exceeded. Retry after 2 minutes"})
+		return
+	}
+
+}

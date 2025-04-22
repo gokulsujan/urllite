@@ -24,6 +24,8 @@ type UserHandler interface {
 	SendEmailVerificationOtp(c *gin.Context)
 	VerifyEmail(c *gin.Context)
 	MakeAdmin(c *gin.Context)
+	Profile(c *gin.Context)
+	SignupAndLogin(c *gin.Context)
 }
 
 type userHandler struct {
@@ -146,6 +148,40 @@ func (h *userHandler) Signup(c *gin.Context) {
 	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Signup successfull!! Please verify the email."})
 }
 
+func (h *userHandler) SignupAndLogin(c *gin.Context) {
+	var signupReq dtos.SignupDTO
+	if err := c.ShouldBindJSON(&signupReq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": "failed", "message": "Invalid request", "result": gin.H{"error": map[string]interface{}{"errot": err.Error()}}})
+		return
+	}
+
+	if signupReq.ConfirmPassword != signupReq.Password {
+		c.JSON(http.StatusNotAcceptable, gin.H{"status": "failed", "message": "Password and confirm passwords are not same"})
+		return
+	}
+
+	user := &types.User{Name: signupReq.Name, Email: signupReq.Email, Mobile: signupReq.Mobile, Status: "registered"}
+	appErr := h.userService.Create(user)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	_, appErr = h.passwordService.Create(signupReq.Password, user.ID.String())
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	accessToken, appErr := h.userService.GenerateUserAccessToken(user, c.Request.Context())
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "Signup successfull!! Please verify the email.", "access_token": accessToken})
+}
+
 func (h *userHandler) Login(c *gin.Context) {
 	var loginReq dtos.LoginDTO
 	err := c.ShouldBindJSON(&loginReq)
@@ -173,7 +209,7 @@ func (h *userHandler) Login(c *gin.Context) {
 			appErr.HttpResponse(c)
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Token generated", "access_token": accessToken})
+		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Token generated", "access_token": accessToken, "verified_email": user.Email == user.VerifiedEmail})
 	} else {
 		c.JSON(http.StatusNotAcceptable, gin.H{"status": "failed", "message": "Incorrect Password"})
 	}
@@ -266,4 +302,18 @@ func (h *userHandler) MakeAdmin(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusAccepted, gin.H{"status": "success", "message": "User role changed to admin"})
+}
+
+func (h *userHandler) Profile(c *gin.Context) {
+	currentUserId, ok := c.Get("current_user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"status": "failed", "message": "No user id available in context"})
+		return
+	}
+
+	user, appErr := h.userService.GetUserByID(currentUserId.(string))
+	if appErr != nil {
+		appErr.HttpResponse(c)
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Profile fetched successfully", "result": gin.H{"user": user}})
 }

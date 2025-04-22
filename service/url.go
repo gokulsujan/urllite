@@ -81,8 +81,8 @@ func (u *urlService) GetUrlsOfUser(user_id string) ([]*types.URL, *types.Applica
 		}
 	} else if len(urls) == 0 {
 		return nil, &types.ApplicationError{
-			Message:        "NO urls found",
-			HttpStatusCode: http.StatusNotFound,
+			Message:        "N0 urls found",
+			HttpStatusCode: http.StatusNoContent,
 		}
 	}
 

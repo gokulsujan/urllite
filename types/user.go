@@ -10,7 +10,7 @@ type User struct {
 	ID            gocql.UUID `json:"id"`
 	Name          string     `json:"name"`
 	Email         string     `json:"email"`
-	VerifiedEmail string     `json:"-"` // json ignore field
+	VerifiedEmail string     `json:"verified_email"`
 	Mobile        string     `json:"mobile"`
 	Status        string     `json:"status"`
 	Role          string     `json:"status"`
