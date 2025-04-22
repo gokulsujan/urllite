@@ -29,8 +29,9 @@ func InitRedis(ctx context.Context) RedisClient {
 	}
 	client := redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("REDIS_ADDR"),
+		Username: os.Getenv("REDDIS_USERNAME"),
 		Password: os.Getenv("REDIS_PASSWORD"),
-		DB:       db, 
+		DB:       db,
 	})
 
 	// Ping to test connection
