@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"time"
 	"urllite/config/database"
 	"urllite/config/env"
@@ -19,6 +20,9 @@ func init() {
 
 func main() {
 	r := gin.Default()
+	if os.Getenv("production") == "true" {
+		gin.SetMode(gin.ReleaseMode)
+	}
 	r.RedirectTrailingSlash = false
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000"},
