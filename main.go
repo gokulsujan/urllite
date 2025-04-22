@@ -20,7 +20,7 @@ func init() {
 
 func main() {
 	r := gin.Default()
-	if os.Getenv("production") == "true" {
+	if os.Getenv("PRODUCTION") == "true" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	r.RedirectTrailingSlash = false

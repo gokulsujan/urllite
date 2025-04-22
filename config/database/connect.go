@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
+	gocqlastra "github.com/datastax/gocql-astra"
 	"github.com/gocql/gocql"
 )
 
@@ -52,6 +54,19 @@ func Connect() {
 
 
 func CreateSession() (*gocql.Session, error) {
+	if (os.Getenv("PRODUCTION") == "true") {
+		var cluster *gocql.ClusterConfig
+
+		cluster, err := gocqlastra.NewClusterFromBundle(os.Getenv("ASTRA_DB_SECURE_BUNDLE_PATH"),
+			"token", os.Getenv("ASTRA_DB_APPLICATION_TOKEN"), 30*time.Second)
+	
+		if err != nil {
+			panic("unable to load the bundle")
+		}
+		cluster.Timeout = 30 * time.Second
+	
+		return gocql.NewSession(*cluster)
+	}
 	cluster := gocql.NewCluster(os.Getenv("CASSANDRA_HOST"))
 	cassandraPort, err := strconv.Atoi(os.Getenv("CASSANDRA_PORT"))
 	if err != nil {
