@@ -5,7 +5,9 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
+	gocqlastra "github.com/datastax/gocql-astra"
 	"github.com/gocql/gocql"
 )
 
@@ -50,33 +52,29 @@ func Connect() {
 
 }
 
+
 func CreateSession() (*gocql.Session, error) {
-	cassandraInstance := os.Getenv("CASSANDRA_INSTANCE")
+	if (os.Getenv("PRODUCTION") == "true") {
+		var cluster *gocql.ClusterConfig
 
-	switch cassandraInstance {
-	case "local":
-		cluster := gocql.NewCluster(os.Getenv("CASSANDRA_HOST"))
-		cassandraPort, err := strconv.Atoi(os.Getenv("CASSANDRA_PORT"))
+		cluster, err := gocqlastra.NewClusterFromBundle(os.Getenv("ASTRA_DB_SECURE_BUNDLE_PATH"),
+			"token", os.Getenv("ASTRA_DB_APPLICATION_TOKEN"), 30*time.Second)
+	
 		if err != nil {
-			log.Fatal("Invalid Cassandra port:", err.Error())
+			panic("unable to load the bundle")
 		}
-		cluster.Port = cassandraPort
-		cluster.Keyspace = os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
-		cluster.Consistency = gocql.Quorum
-
-		return cluster.CreateSession()
-	default:
-		cluster := gocql.NewCluster(os.Getenv("CASSANDRA_HOST"))
-		cassandraPort, err := strconv.Atoi(os.Getenv("CASSANDRA_PORT"))
-		if err != nil {
-			log.Fatal("Invalid Cassandra port:", err.Error())
-		}
-		cluster.Port = cassandraPort
-		cluster.Keyspace = os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
-		cluster.Consistency = gocql.Quorum
-
-		return cluster.CreateSession()
-
+		cluster.Timeout = 30 * time.Second
+	
+		return gocql.NewSession(*cluster)
 	}
-
+	cluster := gocql.NewCluster(os.Getenv("CASSANDRA_HOST"))
+	cassandraPort, err := strconv.Atoi(os.Getenv("CASSANDRA_PORT"))
+	if err != nil {
+		log.Fatal("Invalid Cassandra port:", err.Error())
+	}
+	cluster.Port = cassandraPort
+	cluster.Keyspace = os.Getenv("CASSANDRA_URLLITE_KEYSPACE")
+	cluster.Consistency = gocql.Quorum
+	
+	return cluster.CreateSession()
 }
