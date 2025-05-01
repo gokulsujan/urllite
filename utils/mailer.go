@@ -27,8 +27,12 @@ func NewMailer() Mailer {
 
 func (m *mailer) SendOtpForEmailVerification(user *types.User, otp *types.Otp) error {
 	subject := "Email Verification OTP"
-	body := "Dear " + user.Name + ", Your otp is: " + otp.Otp + ". This otp is valid only for 10 minutes."
-	message := "From: " + m.mailerEmail + "\r\n" + "To: " + user.Email + "\r\n" + subject + "\r\n\r\n" + body
+	body := "Dear " + user.Name + ", Your OTP is: " + otp.Otp + ". This OTP is valid only for 10 minutes."
+	message := "From: " + m.mailerEmail + "\r\n" +
+		"To: " + user.Email + "\r\n" +
+		"Subject: " + subject + "\r\n\r\n" +
+		body
+
 	err := smtp.SendMail(m.smtpHost+":"+m.smtpPort, m.auth, m.mailerEmail, []string{user.Email}, []byte(message))
 	if err != nil {
 		return err
