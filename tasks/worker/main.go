@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 	"urllite/config/env"
 	"urllite/store"
@@ -19,7 +20,7 @@ import (
 func main() {
 	env.EnableEnvVariables()
 	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: "localhost:6379"},
+		asynq.RedisClientOpt{Addr: os.Getenv("REDIS_ADDR")},
 		asynq.Config{Concurrency: 10},
 	)
 	mux := asynq.NewServeMux()
