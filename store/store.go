@@ -445,6 +445,41 @@ func (s *store) CountInteractions(urlId string) (int, error) {
 }
 
 func (s *store) AdminDashboard() (*dtos.AdminDashboardDTO, error) {
+	totalUrlsQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".urls"
+	totalDeletedUrlsQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".urls where deleted_at>0 ALLOW FILTERING"
 
-	return nil, nil
+	totalUsersQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".users"
+	totalDeletedUsersQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".users where deleted_at>0 ALLOW FILTERING"
+	totalSuspendedUsersQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".users where status='suspended' ALLOW FILTERING"
+
+	var totalUrls, totalDeletedUrls, totalUsers, totalDeletedUsers, totalSuspendedUsers int
+	err := s.DBSession.Query(totalUrlsQuery).Scan(&totalUrls)
+	if err != nil {
+		return nil, err
+	}
+	err = s.DBSession.Query(totalDeletedUrlsQuery).Scan(&totalDeletedUrls)
+	if err != nil {
+		return nil, err
+	}
+	err = s.DBSession.Query(totalUsersQuery).Scan(&totalUsers)
+	if err != nil {
+		return nil, err
+	}
+	err = s.DBSession.Query(totalDeletedUsersQuery).Scan(&totalDeletedUsers)
+	if err != nil {
+		return nil, err
+	}
+	err = s.DBSession.Query(totalSuspendedUsersQuery).Scan(&totalSuspendedUsers)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dtos.AdminDashboardDTO{
+		TotalActiveUrls:             totalUrls - totalDeletedUrls,
+		TotalActiveUsers:            totalUsers - totalDeletedUsers - totalSuspendedUsers,
+		TotalUsers:                  totalUsers - totalDeletedUsers,
+		TotalSuspendedUsers:         totalSuspendedUsers,
+		TotalActiveCustomDomains:    0, // Custom domain set up not yet released
+		TotalActiveCustomDomainUrls: 0,
+	}, nil
 }
