@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 	"urllite/types"
+	"urllite/types/dtos"
 
 	"github.com/gocql/gocql"
 )
@@ -47,6 +48,9 @@ type Store interface {
 	CreateOtp(otp *types.Otp) (*types.Otp, error)
 	GetOtpByUserIdAndOtp(userId, key, otpValue string) ([]*types.Otp, error)
 	ChangeOtpStatus(otp *types.Otp, status string) error
+
+	//Admin
+	AdminDashboard() (*dtos.AdminDashboardDTO, error)
 }
 
 var CASSANDRA_HOST, CASSANDRA_KEYSPACE string
@@ -328,7 +332,7 @@ func (s *store) CreateUrlLog(log *types.UrlLog) error {
 }
 
 func (s *store) GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error) {
-	searchLogsQuery := "SELECT id, client_ip, city, country, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id = ? ORDER BY created_at DESC" 
+	searchLogsQuery := "SELECT id, client_ip, city, country, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id = ? ORDER BY created_at DESC"
 	url, err := s.GetUrlByID(urlID)
 	if err != nil {
 		return nil, err
@@ -438,4 +442,9 @@ func (s *store) CountInteractions(urlId string) (int, error) {
 	}
 
 	return count, nil
+}
+
+func (s *store) AdminDashboard() (*dtos.AdminDashboardDTO, error) {
+
+	return nil, nil
 }

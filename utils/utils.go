@@ -4,6 +4,8 @@ import (
 	"crypto/rand"
 	"math/big"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 const base62Charset = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -11,15 +13,14 @@ const base62Length = 7
 
 var maxValue = new(big.Int).Exp(big.NewInt(62), big.NewInt(base62Length), nil)
 
-
 func GenerateBase62ID() (string, error) {
-	now := time.Now().UnixMilli() 
+	now := time.Now().UnixMilli()
 	n, err := rand.Int(rand.Reader, maxValue)
 	if err != nil {
 		return "", err
 	}
 
-	combined := now*1000 + n.Int64() 
+	combined := now*1000 + n.Int64()
 	return base62encodedString(combined), nil
 }
 
@@ -34,4 +35,12 @@ func base62encodedString(n int64) string {
 	}
 
 	return string(encoded)
+}
+
+func HttpResponse(c *gin.Context, httpStatusCode int, message string, result interface{}) {
+	if result == nil {
+		c.JSON(httpStatusCode, gin.H{"status": "success", "message": message})
+		return
+	}
+	c.JSON(httpStatusCode, gin.H{"status": "success", "message": message, "result": result})
 }

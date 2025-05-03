@@ -3,6 +3,7 @@ package routes
 import (
 	"urllite/auth"
 	"urllite/handler"
+	admin_handlers "urllite/handler/admin"
 	"urllite/security"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,7 @@ import (
 func MountHTTPRoutes(r *gin.Engine) {
 	userHandlers := handler.NewUserHandler()
 	urlHandler := handler.NewUrlHandler()
+	adminhandlers := admin_handlers.NewAdminAuthHandler()
 	r.POST("/signup", security.RatelimittingMiddleware, userHandlers.Signup)
 	r.POST("/signup-and-login", security.RatelimittingMiddleware, userHandlers.SignupAndLogin)
 	r.POST("/login", security.RatelimittingMiddleware, userHandlers.Login)
@@ -44,6 +46,12 @@ func MountHTTPRoutes(r *gin.Engine) {
 			urlGroup.DELETE("/:id", urlHandler.DeleteURLById)
 			urlGroup.GET("/:id/logs", urlHandler.GetUrlLogsByUrl)
 
+		}
+
+		r.POST("/api/v1/admin/login", adminhandlers.Login)
+		adminGroup := authenticatedApis.Group("/admin", auth.AdminAuthentication)
+		{
+			adminGroup.GET("/dashboard", adminhandlers.Dashboard)
 		}
 	}
 }
