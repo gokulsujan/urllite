@@ -10,3 +10,9 @@ type AdminDashboardDTO struct {
 	TotalActiveCustomDomains    int
 	TotalActiveCustomDomainUrls int
 }
+
+type AdminUserDashboardDTO struct {
+	TotalActiveUrls             int
+	TotalActiveCustomDomains    int
+	TotalActiveCustomDomainUrls int
+}

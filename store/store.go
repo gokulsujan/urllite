@@ -24,6 +24,7 @@ type Store interface {
 	SearchUsers(filter types.UserFilter) ([]*types.User, error)
 	UpdateUser(user *types.User) error
 	DeleteUser(user *types.User) error
+	UserDashboardStats(userID string) (*dtos.AdminUserDashboardDTO, error)
 
 	//Password Store
 	CreatePassword(password *types.Password) error
@@ -479,6 +480,27 @@ func (s *store) AdminDashboard() (*dtos.AdminDashboardDTO, error) {
 		TotalActiveUsers:            totalUsers - totalDeletedUsers - totalSuspendedUsers,
 		TotalUsers:                  totalUsers - totalDeletedUsers,
 		TotalSuspendedUsers:         totalSuspendedUsers,
+		TotalActiveCustomDomains:    0, // Custom domain set up not yet released
+		TotalActiveCustomDomainUrls: 0,
+	}, nil
+}
+
+func (s *store) UserDashboardStats(userID string) (*dtos.AdminUserDashboardDTO, error) {
+	totalUrlsQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".urls where user_id = ? ALLOW FILTERING"
+	totalDeletedUrlsQuery := "SELECT COUNT(*) FROM " + CASSANDRA_KEYSPACE + ".urls where deleted_at> 0 AND user_id = ?  ALLOW FILTERING"
+
+	var totalUrls, totalDeletedUrls int
+	err := s.DBSession.Query(totalUrlsQuery, userID).Scan(&totalUrls)
+	if err != nil {
+		return nil, err
+	}
+	err = s.DBSession.Query(totalDeletedUrlsQuery, userID).Scan(&totalDeletedUrls)
+	if err != nil {
+		return nil, err
+	}
+
+	return &dtos.AdminUserDashboardDTO{
+		TotalActiveUrls:             totalUrls - totalDeletedUrls,
 		TotalActiveCustomDomains:    0, // Custom domain set up not yet released
 		TotalActiveCustomDomainUrls: 0,
 	}, nil

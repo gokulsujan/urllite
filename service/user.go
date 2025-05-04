@@ -34,6 +34,7 @@ type UserService interface {
 	SendEmailVerificationOtp(emailID string) *types.ApplicationError
 	VerifyEmail(emailID, otpStr string) *types.ApplicationError
 	MakeAdmin(user_id string) *types.ApplicationError
+	UserDashboardStats(userID string) (*dtos.AdminUserDashboardDTO, *types.ApplicationError)
 }
 
 func NewUserService() UserService {
@@ -163,6 +164,10 @@ func (u *userService) UpdateUserByID(id string, user types.User) *types.Applicat
 
 	if strings.TrimSpace(user.Status) != "" {
 		existingUser.Status = strings.TrimSpace(user.Status)
+	}
+
+	if strings.TrimSpace(user.Role) != "" {
+		existingUser.Role = strings.TrimSpace(user.Role)
 	}
 
 	err = u.store.UpdateUser(existingUser)
@@ -381,4 +386,16 @@ func (u *userService) MakeAdmin(user_id string) *types.ApplicationError {
 	}
 
 	return nil
+}
+
+func (u *userService) UserDashboardStats(userID string) (*dtos.AdminUserDashboardDTO, *types.ApplicationError) {
+	stats, err := u.store.UserDashboardStats(userID)
+	if err != nil {
+		return nil, &types.ApplicationError{
+			Message:        "Unable to fetch user stats",
+			HttpStatusCode: http.StatusInternalServerError,
+			Err:            err,
+		}
+	}
+	return stats, nil
 }
