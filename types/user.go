@@ -13,7 +13,7 @@ type User struct {
 	VerifiedEmail string     `json:"verified_email"`
 	Mobile        string     `json:"mobile"`
 	Status        string     `json:"status"`
-	Role          string     `json:"status"`
+	Role          string     `json:"role"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

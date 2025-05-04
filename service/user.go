@@ -161,6 +161,10 @@ func (u *userService) UpdateUserByID(id string, user types.User) *types.Applicat
 		existingUser.VerifiedEmail = strings.TrimSpace(user.VerifiedEmail)
 	}
 
+	if strings.TrimSpace(user.Status) != "" {
+		existingUser.Status = strings.TrimSpace(user.Status)
+	}
+
 	err = u.store.UpdateUser(existingUser)
 	if err != nil {
 		return &types.ApplicationError{

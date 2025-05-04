@@ -112,7 +112,7 @@ func (s *store) GetUserByEmail(email string) (*types.User, error) {
 
 func (s *store) SearchUsers(filter types.UserFilter) ([]*types.User, error) {
 	var users []*types.User
-	searchUsersQuery := `SELECT id, name, email, mobile, verified_email, status, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users`
+	searchUsersQuery := `SELECT id, name, email, mobile, verified_email, status, role, created_at, updated_at, deleted_at FROM ` + CASSANDRA_KEYSPACE + `.users`
 	if filter.Name != "" || filter.Email != "" || filter.Mobile != "" || filter.Status != "" {
 		searchUsersQuery += ` WHERE`
 	}
@@ -173,7 +173,7 @@ func (s *store) SearchUsers(filter types.UserFilter) ([]*types.User, error) {
 	// Iterate over the results
 	for {
 		var user types.User
-		if !iter.Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt) {
+		if !iter.Scan(&user.ID, &user.Name, &user.Email, &user.Mobile, &user.VerifiedEmail, &user.Status, &user.Role, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt) {
 			break
 		}
 		if user.DeletedAt.IsZero() {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"urllite/service"
 	"urllite/store"
 	"urllite/types"
 	"urllite/types/dtos"
@@ -42,10 +43,23 @@ func UserAuthentication(c *gin.Context) {
 		return
 	}
 
-	c.Set("current_username", claims.Username)
-	c.Set("current_user_email", claims.Email)
-	c.Set("current_user_id", claims.UserId)
-	c.Set("current_user_role", claims.Role)
+	svc := service.NewUserService()
+	user, appErr := svc.GetUserByID(claims.UserId)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		c.Abort()
+		return
+	}
+
+	if user.Status == "suspended" {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"status": "failed", "message": "Your credentials are suspended due to some policy reasons. Please contact administrator at info@urllite.in"})
+		return
+	}
+
+	c.Set("current_username", user.Name)
+	c.Set("current_user_email", user.Email)
+	c.Set("current_user_id", user.ID.String())
+	c.Set("current_user_role", user.Role)
 	c.Next()
 }
 
