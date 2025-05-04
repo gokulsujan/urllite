@@ -10,6 +10,7 @@ import (
 
 type AdminUserHandler interface {
 	UserDashboardStats(c *gin.Context)
+	UserUsageStats(c *gin.Context)
 }
 
 type adminUserHandler struct {
@@ -29,6 +30,22 @@ func (h adminUserHandler) UserDashboardStats(c *gin.Context) {
 		utils.HttpResponse(c, http.StatusBadRequest, "User Id is empty", nil)
 	}
 	stats, appErr := h.userService.UserDashboardStats(id)
+	if appErr != nil {
+		appErr.HttpResponse(c)
+		return
+	}
+
+	utils.HttpResponse(c, http.StatusOK, "User stats fetched", map[string]interface{}{"user_stats": stats})
+}
+
+func (h adminUserHandler) UserUsageStats(c *gin.Context) {
+	id := c.Param("id")
+	startDate := c.Query("startDate")
+	endDate := c.Query("endDate")
+	if id == "" {
+		utils.HttpResponse(c, http.StatusBadRequest, "User Id is empty", nil)
+	}
+	stats, appErr := h.userService.UserUsageStats(id, startDate, endDate)
 	if appErr != nil {
 		appErr.HttpResponse(c)
 		return

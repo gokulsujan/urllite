@@ -54,6 +54,7 @@ func MountHTTPRoutes(r *gin.Engine) {
 		{
 			adminGroup.GET("/dashboard", adminhandlers.Dashboard)
 			adminGroup.GET("/user/:id/stats", adminUserHandler.UserDashboardStats)
+			adminGroup.GET("/user/:id/usage", adminUserHandler.UserUsageStats)
 		}
 	}
 }

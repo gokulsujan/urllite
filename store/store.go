@@ -25,6 +25,7 @@ type Store interface {
 	UpdateUser(user *types.User) error
 	DeleteUser(user *types.User) error
 	UserDashboardStats(userID string) (*dtos.AdminUserDashboardDTO, error)
+	UserUsageStats(userID, startDate, endDate string) (map[string]int, error)
 
 	//Password Store
 	CreatePassword(password *types.Password) error
@@ -504,4 +505,36 @@ func (s *store) UserDashboardStats(userID string) (*dtos.AdminUserDashboardDTO, 
 		TotalActiveCustomDomains:    0, // Custom domain set up not yet released
 		TotalActiveCustomDomainUrls: 0,
 	}, nil
+}
+
+func (s *store) UserUsageStats(userID, startDate, endDate string) (map[string]int, error) {
+	startTime, _ := time.Parse("2006-01-02", startDate)
+	endTime, _ := time.Parse("2006-01-02", endDate)
+	userUsageStatsQuery := "SELECT created_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE created_at >= ? AND created_at <= ? AND user_id = ? ALLOW FILTERING;"
+	iter := s.DBSession.Query(userUsageStatsQuery, startTime, endTime, userID).Iter()
+
+	userDeletedUsageStatsQuery := "SELECT created_at FROM " + CASSANDRA_KEYSPACE + ".urls WHERE created_at >= ? AND created_at <= ? AND user_id = ? AND deleted_at > 0 ALLOW FILTERING;"
+	deletedIter := s.DBSession.Query(userDeletedUsageStatsQuery, startTime, endTime, userID).Iter()
+
+	var createdAt time.Time
+	monthlyCount := make(map[string]int)
+	for iter.Scan(&createdAt) {
+		month := createdAt.Format("Jan 2006")
+		monthlyCount[month]++
+	}
+
+	for deletedIter.Scan(&createdAt) {
+		month := createdAt.Format("Jan 2006")
+		monthlyCount[month]--
+	}
+
+	if err := iter.Close(); err != nil {
+		return nil, err
+	}
+
+	if err := deletedIter.Close(); err != nil {
+		return nil, err
+	}
+
+	return monthlyCount, nil
 }
