@@ -14,6 +14,7 @@ func MountHTTPRoutes(r *gin.Engine) {
 	urlHandler := handler.NewUrlHandler()
 	adminhandlers := admin_handlers.NewAdminAuthHandler()
 	adminUserHandler := admin_handlers.NewAdminUserHandler()
+	adminUrlHandler := admin_handlers.NewAdminUrlHandler()
 	r.POST("/signup", security.RatelimittingMiddleware, userHandlers.Signup)
 	r.POST("/signup-and-login", security.RatelimittingMiddleware, userHandlers.SignupAndLogin)
 	r.POST("/login", security.RatelimittingMiddleware, userHandlers.Login)
@@ -55,6 +56,7 @@ func MountHTTPRoutes(r *gin.Engine) {
 			adminGroup.GET("/dashboard", adminhandlers.Dashboard)
 			adminGroup.GET("/user/:id/stats", adminUserHandler.UserDashboardStats)
 			adminGroup.GET("/user/:id/usage", adminUserHandler.UserUsageStats)
+			adminGroup.GET("/user/:id/urls", adminUrlHandler.UrlsByUserID)
 		}
 	}
 }
