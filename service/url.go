@@ -16,7 +16,7 @@ type urlService struct {
 
 type UrlService interface {
 	CreateUrl(longUrl, user_id string) (*types.URL, *types.ApplicationError)
-	GetUrlByID(id, user_id string) (*types.URL, *types.ApplicationError)
+	GetUrlByID(id string) (*types.URL, *types.ApplicationError)
 	GetUrlByShortUrl(short_url string) (*types.URL, *types.ApplicationError)
 	DeleteUrlById(id, user_id string) *types.ApplicationError
 	GetUrlsOfUser(user_id string) ([]*types.URL, *types.ApplicationError)
@@ -89,24 +89,11 @@ func (u *urlService) GetUrlsOfUser(user_id string) ([]*types.URL, *types.Applica
 	return urls, nil
 }
 
-func (u *urlService) GetUrlByID(id, user_id string) (*types.URL, *types.ApplicationError) {
+func (u *urlService) GetUrlByID(id string) (*types.URL, *types.ApplicationError) {
 	url, err := u.store.GetUrlByID(id)
-	parsedUser_id, err := gocql.ParseUUID(user_id)
 	if err != nil {
 		return nil, &types.ApplicationError{
 			Message:        "Unable to find the user from the context",
-			HttpStatusCode: http.StatusInternalServerError,
-			Err:            err,
-		}
-	}
-	if url.UserID != parsedUser_id || (err != nil && url == nil) {
-		return nil, &types.ApplicationError{
-			Message:        "No url found with given id",
-			HttpStatusCode: http.StatusNotFound,
-		}
-	} else if err != nil {
-		return nil, &types.ApplicationError{
-			Message:        "Unable to find the url",
 			HttpStatusCode: http.StatusInternalServerError,
 			Err:            err,
 		}
@@ -134,7 +121,7 @@ func (u *urlService) GetUrlByShortUrl(short_url string) (*types.URL, *types.Appl
 }
 
 func (u *urlService) DeleteUrlById(id, user_id string) *types.ApplicationError {
-	url, appErr := u.GetUrlByID(id, user_id)
+	url, appErr := u.GetUrlByID(id)
 	if appErr != nil {
 		return appErr
 	}

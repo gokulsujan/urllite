@@ -72,20 +72,19 @@ func (u *urlHandler) GetUrlByID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current user id from context"})
 		return
 	}
-	url, appErr := u.urlService.GetUrlByID(urlId, current_user_id.(string))
+	url, appErr := u.urlService.GetUrlByID(urlId)
 	if appErr != nil {
 		appErr.HttpResponse(c)
 		return
 	}
 
-	currentUserID, ok := c.Get("current_user_id")
-	currentUserRole, _ := c.Get("current_user_id")
+	currentUserRole, ok := c.Get("current_user_role")
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current user id from context"})
+		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current role from context"})
 		return
 	}
 
-	if currentUserRole.(string) != "admin" && (url.UserID.String() != currentUserID.(string)) {
+	if currentUserRole.(string) != "admin" && (url.UserID.String() != current_user_id.(string)) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No url found"})
 		return
 	}
@@ -136,12 +135,7 @@ func (u *urlHandler) DeleteURLById(c *gin.Context) {
 
 func (u *urlHandler) GetUrlLogsByUrl(c *gin.Context) {
 	urlId := c.Param("id")
-	userID, ok := c.Get("current_user_id")
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"status": "failed", "message": "No userid in the context"})
-		return
-	}
-	url, appErr := u.urlService.GetUrlByID(urlId, userID.(string))
+	url, appErr := u.urlService.GetUrlByID(urlId)
 	if appErr != nil {
 		appErr.HttpResponse(c)
 	}
