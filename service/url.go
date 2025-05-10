@@ -1,13 +1,12 @@
 package service
 
 import (
-	"context"
 	"net/http"
 	"urllite/store"
 	"urllite/types"
 	"urllite/utils"
 
-	"github.com/chromedp/chromedp"
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gocql/gocql"
 )
 
@@ -173,19 +172,20 @@ func (u *urlService) GetUrlDatas(url *types.URL) (map[string]interface{}, *types
 	return map[string]interface{}{"title": title, "favicon": favicon, "interactions": urlInteractions}, nil
 }
 
-func fetchTitleAndFavicon(url string) (string, string, error) {
-	ctx, cancel := chromedp.NewContext(context.Background())
-	defer cancel()
-
-	var title, favicon string
-	err := chromedp.Run(ctx,
-		chromedp.Navigate(url),
-		chromedp.Title(&title),
-		chromedp.AttributeValue(`link[rel~="icon"]`, "href", &favicon, nil),
-	)
+func fetchTitleAndFavicon(targetURL string) (string, string, error) {
+	resp, err := http.Get(targetURL)
 	if err != nil {
 		return "", "", err
 	}
+	defer resp.Body.Close()
+
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		return "", "", err
+	}
+
+	title := doc.Find("title").Text()
+	favicon, _ := doc.Find("link[rel~='icon']").Attr("href")
 
 	return title, favicon, nil
 }

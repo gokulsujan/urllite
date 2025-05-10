@@ -328,13 +328,13 @@ func (s *store) DeleteURL(url *types.URL) error {
 }
 
 func (s *store) CreateUrlLog(log *types.UrlLog) error {
-	insertUrlLogQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".url_logs (id, url_id, visited_at, redirect_status, http_status_code, client_ip, city, country, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+	insertUrlLogQuery := "INSERT INTO " + CASSANDRA_KEYSPACE + ".url_logs (id, url_id, visited_at, redirect_status, http_status_code, client_ip, city, region, country, isp, timezone, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 	log.ID, log.CreatedAt, log.UpdatedAt = gocql.TimeUUID(), time.Now(), time.Now()
-	return s.DBSession.Query(insertUrlLogQuery, log.ID, log.UrlID, log.VisitedAt, log.RedirectStatus, log.HttpStatusCode, log.ClientIP, log.City, log.Country, log.CreatedAt, log.UpdatedAt).Exec()
+	return s.DBSession.Query(insertUrlLogQuery, log.ID, log.UrlID, log.VisitedAt, log.RedirectStatus, log.HttpStatusCode, log.ClientIP, log.City, log.Region, log.Country, log.Isp, log.Timezone, log.CreatedAt, log.UpdatedAt).Exec()
 }
 
 func (s *store) GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error) {
-	searchLogsQuery := "SELECT id, client_ip, city, country, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id = ? ORDER BY created_at DESC"
+	searchLogsQuery := "SELECT id, client_ip, city, region, country, isp, timezone, url_id, visited_at, redirect_status, http_status_code, created_at, updated_at, deleted_at FROM " + CASSANDRA_KEYSPACE + ".url_logs WHERE url_id = ? ORDER BY created_at DESC"
 	url, err := s.GetUrlByID(urlID)
 	if err != nil {
 		return nil, err
@@ -345,7 +345,7 @@ func (s *store) GetUrlLogsByUrlId(urlID string) ([]*types.UrlLog, error) {
 
 	for {
 		var log types.UrlLog
-		if !iter.Scan(&log.ID, &log.ClientIP, &log.City, &log.Country, &log.UrlID, &log.VisitedAt, &log.RedirectStatus, &log.HttpStatusCode, &log.CreatedAt, &log.UpdatedAt, &log.DeletedAt) {
+		if !iter.Scan(&log.ID, &log.ClientIP, &log.City, &log.Region, &log.Country, &log.Isp, &log.Timezone, &log.UrlID, &log.VisitedAt, &log.RedirectStatus, &log.HttpStatusCode, &log.CreatedAt, &log.UpdatedAt, &log.DeletedAt) {
 			break
 		}
 		if log.DeletedAt.IsZero() {

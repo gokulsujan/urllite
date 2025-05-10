@@ -28,7 +28,7 @@ func NewUrlLogService() UrlLogService {
 func (uls *urlLogService) CreateUrlLogByUrl(url *types.URL, clientIp string) *types.ApplicationError {
 	location, err := utils.GetIPAddressLocation(clientIp)
 
-	task, err := uls.task.CreateLog(url.ID.String(), clientIp, location["country"], location["city"], time.Now())
+	task, err := uls.task.CreateLog(url.ID.String(), clientIp, location["country"], location["city"], location["region"], location["isp"], location["timezone"], time.Now())
 	if err != nil {
 		return &types.ApplicationError{
 			Message:        "Unable to create the log",

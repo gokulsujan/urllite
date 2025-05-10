@@ -14,6 +14,9 @@ type UrlLog struct {
 	HttpStatusCode int        `json:"http_status_code"`
 	ClientIP       string     `json:"client_ip"`
 	City           string     `json:"city"`
+	Region         string     `json:"region"`
+	Isp            string     `json:"isp"`
+	Timezone       string     `json:"timezone"`
 	Country        string     `json:"country"`
 
 	CreatedAt time.Time `json:"created_at"`

@@ -31,5 +31,5 @@ func GetIPAddressLocation(ipStr string) (map[string]string, error) {
 	var data IPInfo
 	json.Unmarshal(body, &data)
 
-	return map[string]string{"country": data.Country, "city": data.City}, nil
+	return map[string]string{"country": data.Country, "city": data.City, "region": data.Region, "isp": data.Org, "timezone": data.Timezone}, nil
 }
