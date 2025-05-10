@@ -1,15 +1,21 @@
 package routes
 
 import (
+	"encoding/json"
+	"log"
+	"os"
+	"time"
 	"urllite/auth"
 	"urllite/handler"
 	admin_handlers "urllite/handler/admin"
 	"urllite/security"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func MountHTTPRoutes(r *gin.Engine) {
+
 	userHandlers := handler.NewUserHandler()
 	urlHandler := handler.NewUrlHandler()
 	adminhandlers := admin_handlers.NewAdminAuthHandler()
@@ -59,4 +65,26 @@ func MountHTTPRoutes(r *gin.Engine) {
 			adminGroup.GET("/user/:id/urls", adminUrlHandler.UrlsByUserID)
 		}
 	}
+}
+
+func BypassCorsPolicy(r *gin.Engine) {
+	raw := os.Getenv("WHITELISTED_APIS")
+	var whitelist []string
+	err := json.Unmarshal([]byte(raw), &whitelist)
+	if err != nil {
+		log.Fatalf("Failed to parse WHITELISTED_APIS: %v", err)
+	}
+
+	r.RedirectTrailingSlash = false
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://admin.urllite.in", "https://app.urllite.in", "http://localhost:5173", "http://localhost:3000", "http://192.168.1.4:3000", "http://localhost:3001", "http://192.168.1.4:3001"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+	r.OPTIONS("/*path", func(c *gin.Context) {
+		c.Status(204)
+	})
 }
