@@ -79,12 +79,13 @@ func (u *urlHandler) GetUrlByID(c *gin.Context) {
 	}
 
 	currentUserID, ok := c.Get("current_user_id")
+	currentUserRole, _ := c.Get("current_user_id")
 	if !ok {
 		c.JSON(http.StatusInternalServerError, gin.H{"status": "failed", "message": "Unable to get current user id from context"})
 		return
 	}
 
-	if url.UserID.String() != currentUserID.(string) {
+	if currentUserRole != "admin" && (url.UserID.String() != currentUserID.(string)) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No url found"})
 		return
 	}
