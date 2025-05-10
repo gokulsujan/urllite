@@ -85,7 +85,7 @@ func (u *urlHandler) GetUrlByID(c *gin.Context) {
 		return
 	}
 
-	if currentUserRole != "admin" && (url.UserID.String() != currentUserID.(string)) {
+	if currentUserRole.(string) != "admin" && (url.UserID.String() != currentUserID.(string)) {
 		c.JSON(http.StatusNotFound, gin.H{"status": "failed", "message": "No url found"})
 		return
 	}
