@@ -1,12 +1,13 @@
 package service
 
 import (
+	"context"
 	"net/http"
 	"urllite/store"
 	"urllite/types"
 	"urllite/utils"
 
-	"github.com/PuerkitoBio/goquery"
+	"github.com/chromedp/chromedp"
 	"github.com/gocql/gocql"
 )
 
@@ -152,7 +153,7 @@ func (u *urlService) GetUrlLogsByUrl(url *types.URL) ([]*types.UrlLog, *types.Ap
 }
 
 func (u *urlService) GetUrlDatas(url *types.URL) (map[string]interface{}, *types.ApplicationError) {
-	resp, err := http.Get(url.LongUrl)
+	title, favicon, err := fetchTitleAndFavicon(url.LongUrl)
 	if err != nil {
 		return nil, &types.ApplicationError{
 			Message:        "Unable to find meta data",
@@ -160,19 +161,6 @@ func (u *urlService) GetUrlDatas(url *types.URL) (map[string]interface{}, *types
 			Err:            err,
 		}
 	}
-	defer resp.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return nil, &types.ApplicationError{
-			Message:        "Unable to find meta data",
-			HttpStatusCode: http.StatusInternalServerError,
-			Err:            err,
-		}
-	}
-
-	title := doc.Find("title").Text()
-	favicon, _ := doc.Find("link[rel~='icon']").Attr("href")
 
 	urlInteractions, err := u.store.CountInteractions(url.ID.String())
 	if err != nil {
@@ -183,4 +171,21 @@ func (u *urlService) GetUrlDatas(url *types.URL) (map[string]interface{}, *types
 		}
 	}
 	return map[string]interface{}{"title": title, "favicon": favicon, "interactions": urlInteractions}, nil
+}
+
+func fetchTitleAndFavicon(url string) (string, string, error) {
+	ctx, cancel := chromedp.NewContext(context.Background())
+	defer cancel()
+
+	var title, favicon string
+	err := chromedp.Run(ctx,
+		chromedp.Navigate(url),
+		chromedp.Title(&title),
+		chromedp.AttributeValue(`link[rel~="icon"]`, "href", &favicon, nil),
+	)
+	if err != nil {
+		return "", "", err
+	}
+
+	return title, favicon, nil
 }

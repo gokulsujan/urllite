@@ -2,10 +2,12 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"urllite/service"
 	"urllite/types/dtos"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/net/html"
 )
 
 type UrlHandler interface {
@@ -62,7 +64,14 @@ func (u *urlHandler) RedirectToLongUrl(c *gin.Context) {
 	}
 
 	u.urlLogService.CreateUrlLogByUrl(url, c.ClientIP())
-	c.Redirect(http.StatusFound, url.LongUrl)
+
+	metadata := fetchMetadata(url.LongUrl)
+	c.HTML(http.StatusOK, "preview.html", gin.H{
+		"Title":       metadata.Title,
+		"Description": metadata.Description,
+		"Image":       metadata.Image,
+		"Url":         url.LongUrl,
+	})
 }
 
 func (u *urlHandler) GetUrlByID(c *gin.Context) {
@@ -152,4 +161,46 @@ func (u *urlHandler) GetUrlLogsByUrl(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": responseMessage, "result": gin.H{"logs": logs}})
 
+}
+
+func fetchMetadata(targetUrl string) *dtos.UrlMetadata {
+	resp, err := http.Get(targetUrl)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return &dtos.UrlMetadata{}
+	}
+	defer resp.Body.Close()
+
+	z := html.NewTokenizer(resp.Body)
+	metadata := &dtos.UrlMetadata{}
+
+	for {
+		tt := z.Next()
+		if tt == html.ErrorToken {
+			break
+		}
+
+		t := z.Token()
+		if t.Type == html.StartTagToken && t.Data == "meta" {
+			var prop, content string
+			for _, attr := range t.Attr {
+				switch strings.ToLower(attr.Key) {
+				case "property", "name":
+					prop = attr.Val
+				case "content":
+					content = attr.Val
+				}
+			}
+
+			switch prop {
+			case "og:title":
+				metadata.Title = content
+			case "og:description":
+				metadata.Description = content
+			case "og:image":
+				metadata.Image = content
+			}
+		}
+	}
+
+	return metadata
 }

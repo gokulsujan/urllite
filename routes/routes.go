@@ -15,7 +15,7 @@ import (
 )
 
 func MountHTTPRoutes(r *gin.Engine) {
-
+	r.LoadHTMLGlob("utils/assets/html/*.html")
 	userHandlers := handler.NewUserHandler()
 	urlHandler := handler.NewUrlHandler()
 	adminhandlers := admin_handlers.NewAdminAuthHandler()
